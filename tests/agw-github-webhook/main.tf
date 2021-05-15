@@ -1,5 +1,5 @@
 terraform {
-  required_version = "0.14.8"
+  required_version = "0.15.0"
   required_providers {
     testing = {
       source  = "apparentlymart/testing"
@@ -32,10 +32,6 @@ locals {
 
 provider "random" {}
 
-resource "random_password" "this" {
-  length = 20
-}
-
 resource "random_id" "this" {
   byte_length = 8
 }
@@ -67,8 +63,6 @@ module "mut_agw_github_webhook" {
       events = ["push"]
     }
   ]
-  create_github_secret_ssm_param = true
-  github_secret_ssm_value        = random_password.this.result
   depends_on = [
     github_repository.test
   ]

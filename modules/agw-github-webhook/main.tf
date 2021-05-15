@@ -28,7 +28,7 @@ resource "aws_lambda_function_event_invoke_config" "lambda" {
 }
 
 module "lambda" {
-  source           = "../function"
+  source           = "github.com/marshall7m/terraform-aws-lambda"
   filename         = data.archive_file.lambda_function.output_path
   source_code_hash = data.archive_file.lambda_function.output_base64sha256
   function_name    = local.function_name
@@ -63,7 +63,7 @@ data "aws_iam_policy_document" "lambda" {
     actions = [
       "ssm:GetParameter"
     ]
-    resources = [try(aws_ssm_parameter.github_secret[0].arn, data.aws_ssm_parameter.github_secret[0].arn)]
+    resources = [aws_ssm_parameter.github_secret.arn]
   }
 
   dynamic "statement" {
@@ -134,7 +134,7 @@ resource "github_repository_webhook" "this" {
     url          = "${aws_api_gateway_deployment.this.invoke_url}${aws_api_gateway_stage.this.stage_name}${aws_api_gateway_resource.this.path}"
     content_type = "json"
     insecure_ssl = false
-    secret       = var.github_secret_ssm_value != "" ? var.github_secret_ssm_value : data.aws_ssm_parameter.github_secret[0].value
+    secret       = random_password.github_webhook_secret.result
   }
 
   active = true
@@ -142,15 +142,13 @@ resource "github_repository_webhook" "this" {
 }
 
 resource "aws_ssm_parameter" "github_secret" {
-  count       = var.create_github_secret_ssm_param ? 1 : 0
   name        = local.github_secret_ssm_key
   description = var.github_secret_ssm_description
   type        = "SecureString"
-  value       = var.github_secret_ssm_value
+  value       = random_password.github_webhook_secret.result
   tags        = var.github_secret_ssm_tags
 }
 
-data "aws_ssm_parameter" "github_secret" {
-  count = var.create_github_secret_ssm_param != true ? 1 : 0
-  name  = var.github_secret_ssm_key
+resource "random_password" "github_webhook_secret" {
+  length           = 24
 }

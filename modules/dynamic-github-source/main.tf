@@ -49,9 +49,7 @@ module "github_webhook" {
     name   = repo.name
     events = repo.events
   }]
-  create_github_secret_ssm_param  = var.create_github_secret_ssm_param
   github_secret_ssm_key           = var.github_secret_ssm_key #tfsec:ignore:GEN003
-  github_secret_ssm_value         = var.github_secret_ssm_value
   github_secret_ssm_description   = var.github_secret_ssm_description #tfsec:ignore:GEN003
   github_secret_ssm_tags          = var.github_secret_ssm_tags
   lambda_success_destination_arns = [module.lambda.function_arn]
