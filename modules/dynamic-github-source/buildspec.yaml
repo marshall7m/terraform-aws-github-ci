@@ -1,0 +1,12 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - pip install pre-commit==1.21.0
+      - pre-commit install
+  build:
+    commands:
+      - pre-commit run --all-files
+      - go test
+  finally:
+    # get runtime
