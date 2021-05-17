@@ -160,4 +160,9 @@ resource "aws_api_gateway_deployment" "this" {
   triggers = {
     redeployment = filesha1("${path.module}/agw.tf")
   }
+  depends_on = [
+    aws_api_gateway_resource.this,
+    aws_api_gateway_method.this,
+    aws_api_gateway_integration.this
+  ]
 }
