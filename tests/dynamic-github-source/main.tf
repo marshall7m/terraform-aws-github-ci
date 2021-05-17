@@ -60,8 +60,6 @@ resource "github_repository_file" "test_push" {
 
 module "mut_dynamic_github_source" {
   source                         = "../../modules//dynamic-github-source"
-  create_github_secret_ssm_param = true
-  github_secret_ssm_value        = random_password.this.result
   github_token_ssm_value         = var.github_token
   codebuild_name                 = "${local.mut}-${random_id.default.id}"
   codebuild_buildspec            = file("buildspec.yaml")
@@ -98,8 +96,4 @@ module "mut_dynamic_github_source" {
 
 output "api_invoke_url" {
   value = module.mut_dynamic_github_source.api_invoke_url
-}
-
-output "repo_cfg" {
-  value = module.mut_dynamic_github_source.repo_cfg
 }

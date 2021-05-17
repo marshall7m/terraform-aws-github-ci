@@ -10,14 +10,6 @@ output "payload_filter_function_arn" {
   value = module.lambda.function_arn
 }
 
-output "github_token_ssm_key" {
-  value = var.github_token_ssm_key
-}
-
 output "codebuild_arn" {
   value = module.codebuild.arn
-}
-
-output "repo_cfg" {
-  value = local.repos
 }
