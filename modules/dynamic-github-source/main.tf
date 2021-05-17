@@ -41,7 +41,7 @@ locals {
 }
 
 module "github_webhook" {
-  source = "github.com/marshall7m/terraform-aws-lambda/modules//agw-github-webhook"
+  source = "..//agw-github-webhook"
 
   api_name        = var.api_name
   api_description = var.api_description
@@ -57,7 +57,7 @@ module "github_webhook" {
 }
 
 module "lambda" {
-  source           = "github.com/marshall7m/terraform-aws-lambda/modules//function"
+  source           = "github.com/marshall7m/terraform-aws-lambda"
   filename         = data.archive_file.lambda_function.output_path
   source_code_hash = data.archive_file.lambda_function.output_base64sha256
   function_name    = var.function_name
