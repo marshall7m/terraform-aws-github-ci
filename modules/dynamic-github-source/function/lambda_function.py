@@ -8,7 +8,7 @@ import ast
 import collections.abc
 import inspect
 import operator
-from typing import List, Union
+from typing import List, Union, Dict, Any
 
 
 log = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ def validate_event(event: str, valid_events: List[str]) -> None:
             }
         )
 
-def validate_payload(payload: dict, event: str, filter_groups: List[dict])) -> None:
+def validate_payload(payload: dict, event: str, filter_groups: List[dict]) -> None:
     """
     Checks if payload body passes atleast one filter group
 
@@ -157,7 +157,7 @@ def lookup_value(items: List[str], value: str) -> bool:
         log.debug(f'actual value: {value}')
         return False
 
-def validate_push(payload: Dict[Any], filter_groups: List[Dict[Any]], repo: github.Repository.Repository) -> bool:
+def validate_push(payload: Dict[Any], filter_groups: List[Dict[Any]], repo: Github.Repository.Repository) -> bool:
     """
     Returns True if payload passes atleast one push related filter group
 
@@ -199,7 +199,7 @@ def validate_push(payload: Dict[Any], filter_groups: List[Dict[Any]], repo: gith
             else: 
                 return True
 
-def validate_pr(payload: Dict[Any], filter_groups: List[Dict[Any]], repo: github.Repository.Repository) -> bool:
+def validate_pr(payload: Dict[Any], filter_groups: List[Dict[Any]], repo: Github.Repository.Repository) -> bool:
     """
     Returns True if payload passes atleast one pull-request related filter group
 
