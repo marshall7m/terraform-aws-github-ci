@@ -6,7 +6,7 @@ output "request_validator_function_arn" {
   value = module.github_webhook.function_arn
 }
 
-output "payload_filter_function_arn" {
+output "payload_validator_function_arn" {
   value = module.lambda.function_arn
 }
 

@@ -1,11 +1,5 @@
 locals {
-  function_name           = coalesce(var.function_name, "github-request-validator-${random_id.default.id}")
-  github_secret_ssm_key   = coalesce(var.github_secret_ssm_key, "github-webhook-secret-${random_id.default.id}")
   lambda_destination_arns = concat(var.lambda_success_destination_arns, var.lambda_failure_destination_arns)
-}
-
-resource "random_id" "default" {
-  byte_length = 8
 }
 
 resource "aws_lambda_function_event_invoke_config" "lambda" {
@@ -31,7 +25,7 @@ module "lambda" {
   source           = "github.com/marshall7m/terraform-aws-lambda"
   filename         = data.archive_file.lambda_function.output_path
   source_code_hash = data.archive_file.lambda_function.output_base64sha256
-  function_name    = local.function_name
+  function_name    = var.function_name
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.8"
   allowed_to_invoke = [
@@ -43,7 +37,7 @@ module "lambda" {
   ]
   enable_cw_logs = true
   env_vars = {
-    GITHUB_WEBHOOK_SECRET_SSM_KEY = local.github_secret_ssm_key
+    GITHUB_WEBHOOK_SECRET_SSM_KEY = var.github_secret_ssm_key
   }
   custom_role_policy_arns = [
     "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
@@ -116,7 +110,7 @@ data "aws_iam_policy_document" "lambda" {
 }
 
 resource "aws_iam_policy" "lambda" {
-  name   = local.function_name
+  name   = var.function_name
   policy = data.aws_iam_policy_document.lambda.json
 }
 
@@ -142,7 +136,7 @@ resource "github_repository_webhook" "this" {
 }
 
 resource "aws_ssm_parameter" "github_secret" {
-  name        = local.github_secret_ssm_key
+  name        = var.github_secret_ssm_key
   description = var.github_secret_ssm_description
   type        = "SecureString"
   value       = random_password.github_webhook_secret.result
@@ -150,5 +144,5 @@ resource "aws_ssm_parameter" "github_secret" {
 }
 
 resource "random_password" "github_webhook_secret" {
-  length           = 24
+  length = 24
 }

@@ -86,7 +86,7 @@ module "dynamic_github_source" {
 
 | Name | Version |
 |------|---------|
-| terraform | 0.15.0 |
+| terraform | >=0.15.0 |
 | aws | >= 2.23 |
 | github | >= 4.4.0 |
 
@@ -109,7 +109,6 @@ module "dynamic_github_source" {
 | codebuild\_buildspec | Content of the default buildspec file | `string` | `null` | no |
 | codebuild\_cache | Cache configuration for Codebuild project | <pre>object({<br>    type     = optional(string)<br>    location = optional(string)<br>    modes    = optional(list(string))<br>  })</pre> | `{}` | no |
 | codebuild\_cw\_group\_name | CloudWatch group name | `string` | `null` | no |
-| codebuild\_cw\_logs | Determines if CloudWatch logs should be enabled | `bool` | `true` | no |
 | codebuild\_cw\_stream\_name | CloudWatch stream name | `string` | `null` | no |
 | codebuild\_description | CodeBuild project description | `string` | `null` | no |
 | codebuild\_environment | Codebuild environment configuration | <pre>object({<br>    compute_type                = optional(string)<br>    image                       = optional(string)<br>    type                        = optional(string)<br>    image_pull_credentials_type = optional(string)<br>    environment_variables = optional(list(object({<br>      name  = string<br>      value = string<br>      type  = optional(string)<br>    })))<br>    privileged_mode = optional(bool)<br>    certificate     = optional(string)<br>    registry_credential = optional(object({<br>      credential          = optional(string)<br>      credential_provider = optional(string)<br>    }))<br>  })</pre> | `{}` | no |
@@ -122,13 +121,12 @@ module "dynamic_github_source" {
 | codebuild\_tags | Tags to attach to Codebuild project | `map(string)` | `{}` | no |
 | codebuild\_timeout | Minutes till build run is timed out | `string` | `null` | no |
 | common\_tags | Tags to add to all resources | `map(string)` | `{}` | no |
-| create\_github\_secret\_ssm\_param | Determines if a SSM parameter should be created for github webhook secret | `bool` | `false` | no |
+| enable\_codebuild\_cw\_logs | Determines if CloudWatch logs should be enabled | `bool` | `true` | no |
 | enable\_codebuild\_s3\_logs | Determines if S3 logs should be enabled | `bool` | `false` | no |
-| function\_name | Name of AWS Lambda function | `string` | `"custom-codebuild-github-webhook-trigger"` | no |
+| function\_name | Name of AWS Lambda function | `string` | `"github-webhook-payload-validator"` | no |
 | github\_secret\_ssm\_description | Github secret SSM parameter description | `string` | `"Secret value for Github Webhooks"` | no |
 | github\_secret\_ssm\_key | SSM parameter store key for github webhook secret. Secret used within Lambda function for Github request validation. | `string` | `"github-webhook-secret"` | no |
 | github\_secret\_ssm\_tags | Tags for Github webhook secret SSM parameter | `map(string)` | `{}` | no |
-| github\_secret\_ssm\_value | SSM parameter store value for github webhook secret. Secret used within Lambda function for Github request validation. | `string` | `""` | no |
 | github\_token\_ssm\_description | Github token SSM parameter description | `string` | `"Github token used to give read access to the payload validator function to get file that differ between commits"` | no |
 | github\_token\_ssm\_key | AWS SSM Parameter Store key for sensitive Github personal token | `string` | `"read-acces-github-token"` | no |
 | github\_token\_ssm\_tags | Tags for Github token SSM parameter | `map(string)` | `{}` | no |
@@ -141,9 +139,7 @@ module "dynamic_github_source" {
 |------|-------------|
 | api\_invoke\_url | n/a |
 | codebuild\_arn | n/a |
-| github\_token\_ssm\_key | n/a |
-| payload\_filter\_function\_arn | n/a |
-| repo\_cfg | n/a |
+| payload\_validator\_function\_arn | n/a |
 | request\_validator\_function\_arn | n/a |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

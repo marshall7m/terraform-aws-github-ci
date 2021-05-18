@@ -49,7 +49,7 @@ module "github_webhook" {
     name   = repo.name
     events = repo.events
   }]
-  github_secret_ssm_key           = var.github_secret_ssm_key #tfsec:ignore:GEN003
+  github_secret_ssm_key           = var.github_secret_ssm_key         #tfsec:ignore:GEN003
   github_secret_ssm_description   = var.github_secret_ssm_description #tfsec:ignore:GEN003
   github_secret_ssm_tags          = var.github_secret_ssm_tags
   lambda_success_destination_arns = [module.lambda.function_arn]
@@ -131,9 +131,9 @@ module "codebuild" {
   s3_log_key                 = var.codebuild_s3_log_key
   s3_log_bucket              = var.codebuild_s3_log_bucket
   s3_log_encryption_disabled = var.codebuild_s3_log_encryption
-  cw_logs                    = var.codebuild_cw_logs
-  cw_group_name              = var.codebuild_cw_group_name
-  cw_stream_name             = var.codebuild_cw_stream_name
+  cw_logs                    = var.enable_codebuild_cw_logs
+  cw_group_name              = coalesce(var.codebuild_cw_group_name, var.codebuild_name)
+  cw_stream_name             = coalesce(var.codebuild_cw_stream_name, var.codebuild_name)
   role_arn                   = var.codebuild_role_arn
 }
 

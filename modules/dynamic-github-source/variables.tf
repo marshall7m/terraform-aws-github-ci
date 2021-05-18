@@ -151,7 +151,7 @@ EOF
 variable "function_name" {
   description = "Name of AWS Lambda function"
   type        = string
-  default     = "custom-codebuild-github-webhook-trigger"
+  default     = "github-webhook-payload-validator"
 }
 
 # Codebuild #
@@ -276,7 +276,7 @@ variable "codebuild_s3_log_encryption" {
   default     = false
 }
 
-variable "codebuild_cw_logs" {
+variable "enable_codebuild_cw_logs" {
   description = "Determines if CloudWatch logs should be enabled"
   type        = bool
   default     = true

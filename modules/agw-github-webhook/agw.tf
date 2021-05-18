@@ -1,9 +1,5 @@
-locals {
-  api_name = coalesce(var.api_name, "github-webhook-${random_id.default.id}")
-}
-
 resource "aws_api_gateway_rest_api" "this" {
-  name        = local.api_name
+  name        = var.api_name
   description = var.api_description
   endpoint_configuration {
     types = ["REGIONAL"]
@@ -80,7 +76,7 @@ resource "aws_api_gateway_model" "this" {
   schema = <<EOF
 {
   "type": "object",
-  "title": "${local.function_name}-ErrorModel",
+  "title": "${var.function_name}-ErrorModel",
   "properties": {
     "isError": {
         "type": "boolean"

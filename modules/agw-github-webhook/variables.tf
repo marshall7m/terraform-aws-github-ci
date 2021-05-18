@@ -32,7 +32,7 @@ variable "repos" {
 variable "github_secret_ssm_key" {
   description = "Key for github secret within AWS SSM Parameter Store"
   type        = string
-  default     = null
+  default     = "github-webhook-request-validator-github-token"
 }
 
 variable "github_secret_ssm_description" {
@@ -62,5 +62,5 @@ variable "lambda_failure_destination_arns" {
 variable "function_name" {
   description = "Name of Lambda function"
   type        = string
-  default     = null
+  default     = "github-webhook-request-validator"
 }
