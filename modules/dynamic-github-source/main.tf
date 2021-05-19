@@ -40,8 +40,8 @@ locals {
   })]
 }
 
-module "github_webhook" {
-  source = "..//agw-github-webhook"
+module "github_webhook_request_validator" {
+  source = "..//github-webhook-request-validator"
 
   api_name        = var.api_name
   api_description = var.api_description

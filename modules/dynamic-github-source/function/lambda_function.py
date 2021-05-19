@@ -55,10 +55,24 @@ def lambda_handler(event, context):
 
     log.info(f'Starting CodeBuild project: {os.environ["CODEBUILD_NAME"]}')
     
+    if event == "pull_request":
+        # if event was a PR merge
+        if payload['action'] == 'closed' and payload['merged']:
+            source_version = payload['pull_request']['base']['ref']
+        # if event was PR activity that wasn't merged
+        else:
+            source_version = f'pr/{payload["pull_request"]["number"]}'
+    elif event == "push":
+        # gets branch that was pushed to
+        source_version = payload['ref'].split('/')[-1]
+
+    log.debug(f'Source Version: {source_version}')
+    
     response = cb.start_build(
-        projectName = os.environ['CODEBUILD_NAME'],
-        sourceLocationOverride = payload['repository']['html_url'],
-        sourceTypeOverride = 'GITHUB',
+        projectName=os.environ['CODEBUILD_NAME'],
+        sourceLocationOverride=payload['repository']['html_url'],
+        sourceTypeOverride='GITHUB',
+        sourceVersion=source_version,
         **repo_cfg['codebuild_cfg']
     )
 
