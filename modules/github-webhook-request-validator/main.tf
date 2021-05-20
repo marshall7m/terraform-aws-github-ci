@@ -50,6 +50,10 @@ data "aws_arn" "lambda_dest" {
   arn   = local.lambda_destination_arns[count.index]
 }
 
+data "aws_kms_key" "ssm" {
+  key_id = "alias/aws/ssm"
+}
+
 data "aws_iam_policy_document" "lambda" {
 
   statement {
@@ -63,7 +67,7 @@ data "aws_iam_policy_document" "lambda" {
     sid = "GithubWebhookSecretDecryptAccess"
     effect = "Allow"
     actions = ["kms:Decrypt"]
-    resources = ["alias/aws/ssm"]
+    resources = [data.aws_kms_key.ssm.arn]
   }
 
   dynamic "statement" {
