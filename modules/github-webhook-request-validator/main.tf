@@ -51,13 +51,19 @@ data "aws_arn" "lambda_dest" {
 }
 
 data "aws_iam_policy_document" "lambda" {
+
   statement {
     sid    = "GithubWebhookSecretReadAccess"
     effect = "Allow"
-    actions = [
-      "ssm:GetParameter"
-    ]
+    actions = ["ssm:GetParameter"]
     resources = [aws_ssm_parameter.github_secret.arn]
+  }
+
+  statement {
+    sid = "GithubWebhookSecretDecryptAccess"
+    effect = "Allow"
+    actions = ["kms:Decrypt"]
+    resources = ["alias/aws/ssm"]
   }
 
   dynamic "statement" {

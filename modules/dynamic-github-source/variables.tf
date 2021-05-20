@@ -17,7 +17,7 @@ variable "github_token_ssm_description" {
 variable "github_token_ssm_key" {
   description = "AWS SSM Parameter Store key for sensitive Github personal token"
   type        = string
-  default     = "read-acces-github-token" #tfsec:ignore:GEN001
+  default     = "github-payload-validator" #tfsec:ignore:GEN001
 }
 
 variable "github_token_ssm_value" {
