@@ -36,7 +36,7 @@ locals {
     events = distinct(flatten([for filter_group in repo.filter_groups :
     filter_group.events if filter_group.exclude_matched_filter != true]))
     #converts terraform codebuild params to python boto3 start_build() params
-    codebuild_cfg = repo.codebuild_cfg != null ? { for key in keys(repo.codebuild_cfg) : local.codebuild_override_keys[key] => lookup(repo.codebuild_cfg, key) if lookup(repo.codebuild_cfg, key) != null } : null
+    codebuild_cfg = repo.codebuild_cfg != null ? { for key in keys(repo.codebuild_cfg) : local.codebuild_override_keys[key] => lookup(repo.codebuild_cfg, key) if lookup(repo.codebuild_cfg, key) != null } : {}
   })]
 }
 
@@ -184,7 +184,7 @@ data "archive_file" "lambda_deps" {
   type        = "zip"
   source_dir  = "${path.module}/deps"
   output_path = "${path.module}/lambda_deps.zip"
-  depends_on  = [
+  depends_on = [
     local_file.filter_groups,
     null_resource.lambda_pip_deps
   ]

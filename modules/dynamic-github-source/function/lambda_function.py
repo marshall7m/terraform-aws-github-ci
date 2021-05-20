@@ -64,10 +64,10 @@ def lambda_handler(event, context):
             source_version = f'pr/{payload["pull_request"]["number"]}'
     elif event == "push":
         # gets branch that was pushed to
-        source_version = payload['ref'].split('/')[-1]
+        source_version = str(payload['ref'].split('/')[-1])
 
     log.debug(f'Source Version: {source_version}')
-    
+    print(source_version)
     response = cb.start_build(
         projectName=os.environ['CODEBUILD_NAME'],
         sourceLocationOverride=payload['repository']['html_url'],
