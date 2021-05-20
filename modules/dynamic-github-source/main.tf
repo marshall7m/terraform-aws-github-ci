@@ -169,9 +169,23 @@ resource "local_file" "filter_groups" {
   filename = "${path.module}/deps/repo_cfg.json"
 }
 
+resource "null_resource" "lambda_pip_deps" {
+  triggers = {
+    zip_hash = fileexists("${path.module}/lambda_deps.zip") ? null : timestamp()
+  }
+  provisioner "local-exec" {
+    command = <<EOF
+    pip install --target ${path.module}/deps/python PyGithub==1.54.1
+    EOF
+  }
+}
+
 data "archive_file" "lambda_deps" {
   type        = "zip"
   source_dir  = "${path.module}/deps"
   output_path = "${path.module}/lambda_deps.zip"
-  depends_on  = [local_file.filter_groups]
+  depends_on  = [
+    local_file.filter_groups,
+    null_resource.lambda_pip_deps
+  ]
 }

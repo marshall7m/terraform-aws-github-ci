@@ -311,7 +311,7 @@ variable "codebuild_tags" {
 variable "api_name" {
   description = "Name of API-Gateway"
   type        = string
-  default     = "custom-github-webhook"
+  default     = "github-webhook"
 }
 
 variable "api_description" {
