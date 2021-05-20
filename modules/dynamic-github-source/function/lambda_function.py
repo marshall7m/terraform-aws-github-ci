@@ -171,7 +171,7 @@ def lookup_value(items: List[str], value: str) -> bool:
         log.debug(f'actual value: {value}')
         return False
 
-def validate_push(payload: Dict[Any], filter_groups: List[Dict[Any]], repo: Github.Repository.Repository) -> bool:
+def validate_push(payload: Dict[Any, Any], filter_groups: List[Dict[str, Any]], repo: Github.Repository.Repository) -> bool:
     """
     Returns True if payload passes atleast one push related filter group
 
@@ -213,7 +213,7 @@ def validate_push(payload: Dict[Any], filter_groups: List[Dict[Any]], repo: Gith
             else: 
                 return True
 
-def validate_pr(payload: Dict[Any], filter_groups: List[Dict[Any]], repo: Github.Repository.Repository) -> bool:
+def validate_pr(payload: Dict[Any, Any], filter_groups: List[Dict[str, Any]], repo: Github.Repository.Repository) -> bool:
     """
     Returns True if payload passes atleast one pull-request related filter group
 
