@@ -17,6 +17,7 @@ Current implementation of AWS CodeBuild doesn't allow for dynamic repo and branc
 5. The payload validator Lambda function is invoked asynchronously on success of the request validor Lambda Function. Payload validator function compares the payload to the filter groups. If the payload passes one of the filter groups, the Codebuild project is kicked off with the triggered repository's CodeBuild configurations ONLY for this build (after this build, CodeBuild project reverts to original configurations).
 6. CodeBuild performs the defined buildspec logic
 
+#TODO: Add requirement for `pip` to create lambda layer within `null_resource` local-exec
 
 ## Usage
 

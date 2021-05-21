@@ -67,7 +67,7 @@ def lambda_handler(event, context):
         source_version = str(payload['ref'].split('/')[-1])
 
     log.debug(f'Source Version: {source_version}')
-    print(source_version)
+
     response = cb.start_build(
         projectName=os.environ['CODEBUILD_NAME'],
         sourceLocationOverride=payload['repository']['html_url'],

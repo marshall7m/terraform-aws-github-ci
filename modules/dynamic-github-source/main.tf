@@ -132,8 +132,6 @@ module "codebuild" {
   s3_log_bucket              = var.codebuild_s3_log_bucket
   s3_log_encryption_disabled = var.codebuild_s3_log_encryption
   cw_logs                    = var.enable_codebuild_cw_logs
-  cw_group_name              = coalesce(var.codebuild_cw_group_name, var.codebuild_name)
-  cw_stream_name             = coalesce(var.codebuild_cw_stream_name, var.codebuild_name)
   role_arn                   = var.codebuild_role_arn
 }
 
@@ -171,7 +169,7 @@ resource "local_file" "filter_groups" {
 
 resource "null_resource" "lambda_pip_deps" {
   triggers = {
-    zip_hash = fileexists("${path.module}/lambda_deps.zip") ? null : timestamp()
+    zip_hash = fileexists("${path.module}/lambda_deps.zip") ? 0 : timestamp()
   }
   provisioner "local-exec" {
     command = <<EOF
