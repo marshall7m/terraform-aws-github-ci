@@ -1,19 +1,19 @@
 output "api_invoke_url" {
-  value = module.dynamic_github_source.invoke_url
+  description = "API invoke URL the github webhook will ping"
+  value       = module.github_webhook_request_validator.module.github_webhook_request_validator.invoke_url
 }
 
 output "request_validator_function_arn" {
-  value = module.dynamic_github_source.function_arn
+  description = "ARN of the Lambda function that validates the Github request"
+  value       = module.github_webhook_request_validator.module.github_webhook_request_validator.function_arn
 }
 
-output "payload_filter_function_arn" {
-  value = module.dynamic_github_source.module.lambda.function_arn
+output "payload_validator_function_arn" {
+  description = "ARN of the Lambda function that validates the Github payload"
+  value       = module.github_webhook_request_validator.module.lambda.function_arn
 }
 
 output "codebuild_arn" {
-  value = module.dynamic_github_source.module.codebuild.arn
-}
-
-output "repo_cfg" {
-  value = module.dynamic_github_source.local.repos
+  description = "ARN of the CodeBuild project will be conditionally triggered from the payload validator function"
+  value       = module.github_webhook_request_validator.module.codebuild.arn
 }

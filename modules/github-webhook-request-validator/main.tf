@@ -22,7 +22,7 @@ resource "aws_lambda_function_event_invoke_config" "lambda" {
 }
 
 module "lambda" {
-  source           = "github.com/marshall7m/terraform-aws-lambda"
+  source           = "github.com/marshall7m/terraform-aws-lambda?ref=0.1.0"
   filename         = data.archive_file.lambda_function.output_path
   source_code_hash = data.archive_file.lambda_function.output_base64sha256
   function_name    = var.function_name
@@ -57,16 +57,16 @@ data "aws_kms_key" "ssm" {
 data "aws_iam_policy_document" "lambda" {
 
   statement {
-    sid    = "GithubWebhookSecretReadAccess"
-    effect = "Allow"
-    actions = ["ssm:GetParameter"]
+    sid       = "GithubWebhookSecretReadAccess"
+    effect    = "Allow"
+    actions   = ["ssm:GetParameter"]
     resources = [aws_ssm_parameter.github_secret.arn]
   }
 
   statement {
-    sid = "GithubWebhookSecretDecryptAccess"
-    effect = "Allow"
-    actions = ["kms:Decrypt"]
+    sid       = "GithubWebhookSecretDecryptAccess"
+    effect    = "Allow"
+    actions   = ["kms:Decrypt"]
     resources = [data.aws_kms_key.ssm.arn]
   }
 

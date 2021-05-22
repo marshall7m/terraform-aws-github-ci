@@ -56,7 +56,7 @@ resource "github_repository_file" "test" {
 }
 
 module "mut_agw_github_webhook" {
-  source = "../../modules/agw-github-webhook"
+  source = "../../modules/github-webhook-request-validator"
   repos = [
     {
       name   = local.repo_name

@@ -59,10 +59,10 @@ resource "github_repository_file" "test_push" {
 }
 
 module "mut_dynamic_github_source" {
-  source                         = "../../modules//dynamic-github-source"
-  github_token_ssm_value         = var.github_token
-  codebuild_name                 = "${local.mut}-${random_id.default.id}"
-  codebuild_buildspec            = file("buildspec.yaml")
+  source                 = "../../modules//dynamic-github-source"
+  github_token_ssm_value = var.github_token
+  codebuild_name         = "${local.mut}-${random_id.default.id}"
+  codebuild_buildspec    = file("buildspec.yaml")
   repos = [
     {
       name = github_repository.test.name

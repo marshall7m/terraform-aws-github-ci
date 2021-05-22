@@ -57,7 +57,7 @@ module "github_webhook_request_validator" {
 }
 
 module "lambda" {
-  source           = "github.com/marshall7m/terraform-aws-lambda"
+  source           = "github.com/marshall7m/terraform-aws-lambda?ref=v0.1.0"
   filename         = data.archive_file.lambda_function.output_path
   source_code_hash = data.archive_file.lambda_function.output_base64sha256
   function_name    = var.function_name
@@ -111,7 +111,7 @@ resource "aws_iam_policy" "lambda" {
 }
 
 module "codebuild" {
-  source = "github.com/marshall7m/terraform-aws-codebuild"
+  source = "github.com/marshall7m/terraform-aws-codebuild?ref=0.1.0"
 
   name        = var.codebuild_name
   description = var.codebuild_description

@@ -32,7 +32,7 @@ variable "repos" {
 variable "github_secret_ssm_key" {
   description = "Key for github secret within AWS SSM Parameter Store"
   type        = string
-  default     = "github-webhook-request-validator-github-token"
+  default     = "github-webhook-request-validator-github-token" #tfsec:ignore:GEN001
 }
 
 variable "github_secret_ssm_description" {
