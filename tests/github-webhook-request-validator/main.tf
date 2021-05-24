@@ -1,26 +1,5 @@
-terraform {
-  required_version = "0.15.0"
-  required_providers {
-    testing = {
-      source  = "apparentlymart/testing"
-      version = "0.0.2"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "3.1.0"
-    }
-  }
-}
-
 locals {
   repo_name = "mut-agw-github-webhook-${random_id.this.id}"
-  not_sha_sig_input = jsonencode({
-    "headers" = {
-      "X-Hub-Signature-256" = sha256("test")
-      "X-GitHub-Event" : "push"
-    }
-    "body" = {}
-  })
   invalid_sig_input = jsonencode({
     "headers" = {
       "X-Hub-Signature-256" = "sha256=${sha256("test")}"
@@ -66,4 +45,31 @@ module "mut_agw_github_webhook" {
   depends_on = [
     github_repository.test
   ]
+}
+
+data "aws_lambda_invocation" "not_sha_signed" {
+  function_name = module.mut_dynamic_github_source.function_name
+
+  input = jsonencode(
+    {
+      "headers" = {
+        "X-Hub-Signature-256" = sha256("test")
+        "X-GitHub-Event" : "push"
+      }
+      "body" = {}
+    }
+  )
+}
+
+resource "test_assertions" "request_validator" {
+  component = "test_requests"
+
+  equal "not_sha_signed" {
+    description = "payload"
+    got         = { for key, value in jsondecode(data.aws_lambda_invocation.not_sha_signed.result) : key => jsondecode(value) }
+    want = {
+      "statusCode" = 403,
+      "body"       = { "error" = "signature is invalid" }
+    }
+  }
 }
