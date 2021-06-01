@@ -22,12 +22,14 @@ resource "github_repository" "test" {
 resource "github_repository_file" "test_pr" {
   repository          = github_repository.test.name
   branch              = github_branch.test_pr.branch
-  file                = "test.py"
+  file                = "test_pr.py"
   content             = "used to trigger repo's webhook for testing associated mut: ${local.mut}"
   commit_message      = "test file"
   overwrite_on_create = true
   depends_on = [
-    module.mut_dynamic_github_source
+    module.mut_dynamic_github_source,
+    aws_cloudwatch_log_metric_filter.request_validator_errors,
+    aws_cloudwatch_log_metric_filter.payload_validator_errors
   ]
 }
 
@@ -43,17 +45,23 @@ resource "github_repository_pull_request" "test_pr" {
   head_ref        = github_branch.test_pr.branch
   title           = "Test webhook PR filter"
   body            = "Check Cloudwatch logs for results"
-  depends_on      = [github_repository_file.test_pr]
+  depends_on = [
+    github_repository_file.test_pr,
+    aws_cloudwatch_log_metric_filter.request_validator_errors,
+    aws_cloudwatch_log_metric_filter.payload_validator_errors
+  ]
 }
 
 resource "github_repository_file" "test_push" {
   repository          = github_repository.test.name
   branch              = "master"
-  file                = "CHANGELOG.md"
+  file                = "test_push.py"
   content             = "used to trigger repo's webhook for testing associated mut: ${local.mut}"
   commit_message      = "test webhook push filter"
   overwrite_on_create = true
   depends_on = [
+    aws_cloudwatch_log_metric_filter.request_validator_errors,
+    aws_cloudwatch_log_metric_filter.payload_validator_errors,
     module.mut_dynamic_github_source
   ]
 }
@@ -92,8 +100,4 @@ module "mut_dynamic_github_source" {
   depends_on = [
     github_repository.test
   ]
-}
-
-output "api_invoke_url" {
-  value = module.mut_dynamic_github_source.api_invoke_url
 }

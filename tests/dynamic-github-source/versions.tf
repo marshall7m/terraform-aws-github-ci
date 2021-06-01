@@ -9,6 +9,9 @@ terraform {
       source  = "apparentlymart/testing"
       version = "0.0.2"
     }
+    test = {
+      source = "terraform.io/builtin/test"
+    }
     github = {
       source  = "integrations/github"
       version = "4.9.3"

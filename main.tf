@@ -1,4 +1,4 @@
-module "github_webhook_request_validator" {
+module "dynamic_github_source" {
   source = "./modules//dynamic-github-source"
 
   github_token_ssm_value = var.github_token_ssm_value

@@ -22,7 +22,7 @@ resource "aws_lambda_function_event_invoke_config" "lambda" {
 }
 
 module "lambda" {
-  source           = "github.com/marshall7m/terraform-aws-lambda?ref=0.1.0"
+  source           = "github.com/marshall7m/terraform-aws-lambda"
   filename         = data.archive_file.lambda_function.output_path
   source_code_hash = data.archive_file.lambda_function.output_base64sha256
   function_name    = var.function_name

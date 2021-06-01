@@ -141,7 +141,9 @@ module "dynamic_github_source" {
 |------|-------------|
 | api\_invoke\_url | API invoke URL the github webhook will ping |
 | codebuild\_arn | ARN of the CodeBuild project will be conditionally triggered from the payload validator function |
+| payload\_validator\_cw\_log\_group\_arn | Name of the Cloudwatch log group associated with the payload validator Lambda Function |
 | payload\_validator\_function\_arn | ARN of the Lambda function that validates the Github payload |
+| request\_validator\_cw\_log\_group\_arn | Name of the Cloudwatch log group associated with the request validator Lambda Function |
 | request\_validator\_function\_arn | ARN of the Lambda function that validates the Github request |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

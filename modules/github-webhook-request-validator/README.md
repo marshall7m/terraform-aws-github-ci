@@ -35,7 +35,9 @@
 
 | Name | Description |
 |------|-------------|
+| cw\_log\_group\_arn | ARN of the CloudWatch log group associated with the Lambda function |
 | function\_arn | ARN of AWS Lambda function used to validate Github webhook request |
+| function\_name | Name of the Lambda function used to validate Github webhook request |
 | invoke\_url | API invoke URL the github webhook will ping |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
