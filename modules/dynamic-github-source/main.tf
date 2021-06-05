@@ -167,6 +167,7 @@ resource "local_file" "filter_groups" {
   filename = "${path.module}/deps/repo_cfg.json"
 }
 
+# pip install runtime packages needed for payload validator function
 resource "null_resource" "lambda_pip_deps" {
   triggers = {
     zip_hash = fileexists("${path.module}/lambda_deps.zip") ? 0 : timestamp()
