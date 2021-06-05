@@ -24,7 +24,7 @@ output "payload_validator_cw_log_group_arn" {
 }
 
 output "codebuild_arn" {
-  description = "ARN of the CodeBuild project will be conditionally triggered from the payload validator function"
+  description = "ARN of the CodeBuild project will be conditionally triggered from the payload validator Lambda function"
   value       = module.codebuild.arn
 }
 
