@@ -116,6 +116,10 @@ module "codebuild" {
   name        = var.codebuild_name
   description = var.codebuild_description
 
+  source_auth_token       = var.github_token_ssm_value
+  source_auth_server_type = "GITHUB"
+  source_auth_type        = "PERSONAL_ACCESS_TOKEN"
+
   assumable_role_arns = var.codebuild_assumable_role_arns
   artifacts           = local.codebuild_artifacts
   environment         = local.codebuild_environment
