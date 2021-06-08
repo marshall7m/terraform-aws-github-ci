@@ -1,5 +1,5 @@
 terraform {
-  required_version = "0.15.0"
+  required_version = ">=0.15.0"
   required_providers {
     random = {
       source  = "hashicorp/random"
@@ -16,9 +16,5 @@ terraform {
       source  = "integrations/github"
       version = "4.9.3"
     }
-    # bash = {
-    #   source = "apparentlymart/bash"
-    #   version = ">= 0.1.0"
-    # }
   }
 }

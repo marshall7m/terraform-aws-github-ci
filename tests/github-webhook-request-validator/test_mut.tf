@@ -35,14 +35,24 @@ resource "github_repository_file" "test" {
   ]
 }
 
+output "test" {
+  value = module.mut_github_webhook_request_validator.webhook_urls[github_repository.test.name]
+}
+
 module "mut_github_webhook_request_validator" {
   source = "../../modules/github-webhook-request-validator"
 
-  api_name = "mut-${local.mut}"
+  create_github_token_ssm_param = false
+  github_token_ssm_key          = "github-webhook-request-validator-github-token"
+  api_name                      = "mut-${local.mut}"
   repos = [
     {
-      name   = local.repo_name
-      events = ["push"]
+      name = local.repo_name
+      filter_groups = [
+        {
+          events = ["push"]
+        }
+      ]
     }
   ]
   depends_on = [
@@ -56,22 +66,15 @@ resource "null_resource" "not_sha_signed" {
   }
   provisioner "local-exec" {
     command = <<EOF
-aws lambda invoke \
-  --function-name ${module.mut_github_webhook_request_validator.function_name} \
-  --payload "${base64encode(jsonencode({
-    "headers" = {
-      "X-Hub-Signature-256" = sha256("test")
-      "X-GitHub-Event" : "push"
-    }
-    "body" = {}
-}))}" \
-  tmp/not_sha_signed.json
-EOF
-}
-
-depends_on = [
-  module.mut_github_webhook_request_validator
-]
+curl --silent \
+  -H 'Content-Type: application/json' \
+  -H 'X-Hub-Signature-256" = ${sha256("test")}' \
+  -H 'X-GitHub-Event" : push' \
+  -d '{"text": "foo"}' \
+  -o ${path.cwd}/.tmp/not_sha_signed.json \
+  ${module.mut_github_webhook_request_validator.invoke_url}
+  EOF
+  }
 }
 
 resource "null_resource" "invalid_sha_sig" {
@@ -80,39 +83,32 @@ resource "null_resource" "invalid_sha_sig" {
   }
   provisioner "local-exec" {
     command = <<EOF
-aws lambda invoke \
-  --function-name ${module.mut_github_webhook_request_validator.function_name} \
-  --payload "${base64encode(jsonencode({
-    "headers" = {
-      "X-Hub-Signature-256" = "sha256=${sha256("test")}"
-      "X-GitHub-Event" : "push"
-    }
-    "body" = {}
-}))}" \
-  ${path.cwd}/tmp/invalid_sha_sig.json
-EOF
+curl --silent \
+  -H 'Content-Type: application/json' \
+  -H 'X-Hub-Signature-256" = sha256=${sha256("test")}' \
+  -H 'X-GitHub-Event" : push' \
+  -d '{"text": "foo"}' \
+  -o ${path.cwd}/.tmp/invalid_sha_sig.json \
+  ${module.mut_github_webhook_request_validator.invoke_url}
+  EOF
+  }
 }
 
-depends_on = [
-  module.mut_github_webhook_request_validator
-]
-}
 
 data "local_file" "not_sha_signed" {
-  filename = "tmp/not_sha_signed.json"
+  filename = "${path.cwd}/.tmp/not_sha_signed.json"
   depends_on = [
     null_resource.not_sha_signed
   ]
 }
 
 data "local_file" "invalid_sha_sig" {
-  filename = "tmp/invalid_sha_sig.json"
+  filename = "${path.cwd}/.tmp/invalid_sha_sig.json"
   depends_on = [
     null_resource.invalid_sha_sig
   ]
 }
 
-#TODO: Create issue for `terraform.io/builtin/test`. Both assertions pass when not equal
 resource "test_assertions" "request_validator" {
   component = "test_error_handling"
 

@@ -62,16 +62,6 @@ what type of activity will trigger the associated Codebuild.
 Params:
   `name`: Repository name
   `codebuild_cfg`: CodeBuild configurations specifically for the repository
-  `filter_groups`: {
-    `events` - List of Github Webhook events that will invoke the API. Currently only supports: `push` and `pull_request`.
-    `pr_actions` - List of pull request actions (e.g. opened, edited, reopened, closed). See more under the action key at: https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#pull_request
-    `base_refs` - List of base refs
-    `head_refs` - List of head refs
-    `actor_account_ids` - List of Github user IDs
-    `commit_messages` - List of commit messages
-    `file_paths` - List of file paths
-    `exclude_matched_filter` - If set to true, Codebuild project will not be triggered by this filter if it is matched
-  }
 EOF
 
   type = list(object({
@@ -130,17 +120,6 @@ EOF
           location = string
         }))
       }))
-    }))
-
-    filter_groups = list(object({
-      events                 = list(string)
-      pr_actions             = optional(list(string))
-      base_refs              = optional(list(string))
-      head_refs              = optional(list(string))
-      actor_account_ids      = optional(list(string))
-      commit_messages        = optional(list(string))
-      file_paths             = optional(list(string))
-      exclude_matched_filter = optional(bool)
     }))
   }))
   default = []

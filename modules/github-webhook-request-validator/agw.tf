@@ -50,24 +50,6 @@ resource "aws_api_gateway_integration" "this" {
   uri = module.lambda.function_invoke_arn
 }
 
-# resource "aws_api_gateway_method_response" "status_500" {
-#   rest_api_id = aws_api_gateway_rest_api.this.id
-#   resource_id = aws_api_gateway_resource.this.id
-#   http_method = aws_api_gateway_method.this.http_method
-#   status_code = "500"
-# }
-
-# resource "aws_api_gateway_integration_response" "status_500" {
-#   rest_api_id = aws_api_gateway_rest_api.this.id
-#   resource_id = aws_api_gateway_resource.this.id
-#   http_method = aws_api_gateway_integration.this.http_method
-#   status_code = "500"
-
-#   depends_on = [
-#     aws_api_gateway_method_response.status_500
-#   ]
-# }
-
 resource "aws_api_gateway_model" "this" {
   rest_api_id  = aws_api_gateway_rest_api.this.id
   name         = "CustomErrorModel"
@@ -127,6 +109,39 @@ resource "aws_api_gateway_integration_response" "status_400" {
   selection_pattern = ".*\"type\"\\s*:\\s*\"ClientException\".*"
   depends_on = [
     aws_api_gateway_method_response.status_400
+  ]
+}
+resource "aws_api_gateway_method_response" "status_500" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.this.id
+  http_method = aws_api_gateway_method.this.http_method
+  status_code = "500"
+  response_models = {
+    "application/json" = aws_api_gateway_model.this.name
+  }
+}
+
+resource "aws_api_gateway_integration_response" "status_500" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.this.id
+  http_method = aws_api_gateway_integration.this.http_method
+  status_code = "500"
+
+  response_templates = {
+    "application/json" = <<EOF
+    #set($inputRoot = $input.path('$'))
+    #set ($errorMessageObj = $util.parseJson($input.path('$.errorMessage')))
+    {
+        "isError" : true,
+        "message" : "$errorMessageObj.message",
+        "type": "$errorMessageObj.type"
+    }
+  EOF
+  }
+
+  selection_pattern = ".*\"type\"\\s*:\\s*\"ServerException\".*"
+  depends_on = [
+    aws_api_gateway_method_response.status_500
   ]
 }
 

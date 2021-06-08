@@ -1,4 +1,16 @@
 locals {
+  default_repos = [for repo in var.repos : merge(repo, {
+    filter_groups = [for filter_group in repo.filter_groups :
+      defaults(filter_group, {
+        exclude_matched_filter = false
+      })
+    ]
+  })]
+  repos = [for repo in local.default_repos : merge(repo, {
+    #pulls distinct filter group events to define the Github webhook events
+    events = distinct(flatten([for filter_group in repo.filter_groups :
+    filter_group.events if filter_group.exclude_matched_filter != true]))
+  })]
   lambda_destination_arns = concat(var.lambda_success_destination_arns, var.lambda_failure_destination_arns)
 }
 
@@ -38,11 +50,56 @@ module "lambda" {
   enable_cw_logs = true
   env_vars = {
     GITHUB_WEBHOOK_SECRET_SSM_KEY = var.github_secret_ssm_key
+    GITHUB_TOKEN_SSM_KEY          = var.github_token_ssm_key
   }
   custom_role_policy_arns = [
     "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
     aws_iam_policy.lambda.arn
   ]
+  lambda_layers = [
+    {
+      filename         = data.archive_file.lambda_deps.output_path
+      name             = "${var.function_name}-deps"
+      runtimes         = ["python3.8"]
+      source_code_hash = data.archive_file.lambda_deps.output_base64sha256
+      description      = "Dependencies for lambda function: ${var.function_name}"
+    }
+  ]
+}
+
+
+# pip install runtime packages needed for request validator function
+resource "null_resource" "lambda_pip_deps" {
+  triggers = {
+    zip_hash = fileexists("${path.module}/lambda_deps.zip") ? 0 : timestamp()
+  }
+  provisioner "local-exec" {
+    command = <<EOF
+    pip install --target ${path.module}/deps/python PyGithub==1.54.1
+    EOF
+  }
+}
+
+data "archive_file" "lambda_deps" {
+  type        = "zip"
+  source_dir  = "${path.module}/deps"
+  output_path = "${path.module}/lambda_deps.zip"
+  depends_on = [
+    local_file.filter_groups,
+    null_resource.lambda_pip_deps
+  ]
+}
+
+data "archive_file" "lambda_function" {
+  type        = "zip"
+  source_dir  = "${path.module}/function"
+  output_path = "${path.module}/function.zip"
+}
+
+#using lambda layer file for filter groups given lambda functions have a size limit of 4KB for env vars and easier parsing
+resource "local_file" "filter_groups" {
+  content  = jsonencode({ for repo in local.repos : repo.name => repo.filter_groups })
+  filename = "${path.module}/deps/filter_groups.json"
 }
 
 data "aws_arn" "lambda_dest" {
@@ -54,7 +111,30 @@ data "aws_kms_key" "ssm" {
   key_id = "alias/aws/ssm"
 }
 
+resource "aws_ssm_parameter" "github_token" {
+  count       = var.create_github_token_ssm_param && var.github_token_ssm_value != "" ? 1 : 0
+  name        = var.github_token_ssm_key
+  description = var.github_token_ssm_description
+  type        = "SecureString"
+  value       = var.github_token_ssm_value
+  tags        = var.github_token_ssm_tags
+}
+
+data "aws_ssm_parameter" "github_token" {
+  count = var.create_github_token_ssm_param == false && var.github_token_ssm_value == "" ? 1 : 0
+  name  = var.github_token_ssm_key
+}
+
 data "aws_iam_policy_document" "lambda" {
+
+  statement {
+    sid    = "GithubWebhookTokenReadAccess"
+    effect = "Allow"
+    actions = [
+      "ssm:GetParameter"
+    ]
+    resources = [var.github_token_ssm_value != "" ? aws_ssm_parameter.github_token[0].arn : data.aws_ssm_parameter.github_token[0].arn]
+  }
 
   statement {
     sid       = "GithubWebhookSecretReadAccess"
@@ -64,7 +144,7 @@ data "aws_iam_policy_document" "lambda" {
   }
 
   statement {
-    sid       = "GithubWebhookSecretDecryptAccess"
+    sid       = "SSMDecryptAccess"
     effect    = "Allow"
     actions   = ["kms:Decrypt"]
     resources = [data.aws_kms_key.ssm.arn]
@@ -124,15 +204,9 @@ resource "aws_iam_policy" "lambda" {
   policy = data.aws_iam_policy_document.lambda.json
 }
 
-data "archive_file" "lambda_function" {
-  type        = "zip"
-  source_dir  = "${path.module}/function"
-  output_path = "${path.module}/function.zip"
-}
-
 resource "github_repository_webhook" "this" {
-  count      = length(var.repos)
-  repository = var.repos[count.index].name
+  for_each   = { for repo in local.repos : repo.name => repo }
+  repository = each.value.name
 
   configuration {
     url          = "${aws_api_gateway_deployment.this.invoke_url}${aws_api_gateway_stage.this.stage_name}${aws_api_gateway_resource.this.path}"
@@ -142,7 +216,7 @@ resource "github_repository_webhook" "this" {
   }
 
   active = true
-  events = var.repos[count.index].events
+  events = each.value.events
 }
 
 resource "aws_ssm_parameter" "github_secret" {

@@ -3,6 +3,12 @@ output "invoke_url" {
   value       = "${aws_api_gateway_deployment.this.invoke_url}${aws_api_gateway_stage.this.stage_name}${aws_api_gateway_resource.this.path}"
 }
 
+output "webhook_urls" {
+  description = "Map of repo webhook URLs"
+  value       = { for repo in github_repository_webhook.this : repo.repository => repo.url }
+  sensitive   = true
+}
+
 output "function_arn" {
   description = "ARN of AWS Lambda function used to validate Github webhook request"
   value       = module.lambda.function_arn
