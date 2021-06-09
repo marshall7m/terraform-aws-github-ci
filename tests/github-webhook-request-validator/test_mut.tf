@@ -1,13 +1,9 @@
 locals {
-  mut       = basename(path.cwd)
-  repo_name = "mut-${local.mut}-${random_id.this.id}"
-  invalid_sig_input = jsonencode({
-    "headers" = {
-      "X-Hub-Signature-256" = "sha256=${sha256("test")}"
-      "X-GitHub-Event" : "push"
-    }
-    "body" = {}
-  })
+  mut = basename(path.cwd)
+  #TODO: figure out why using random_id causes github webhook resource for_each depedency error
+  # repo_name = "mut-${local.mut}-${random_id.this.id}"
+  repo_name     = "mut-${local.mut}"
+  test_payloads = file("${path.cwd}/test_payloads.json")
 }
 
 provider "random" {}
@@ -18,9 +14,12 @@ resource "random_id" "this" {
 
 resource "github_repository" "test" {
   name        = local.repo_name
-  description = "Test repo for mut: terraform-aws-lambda/agw-github-webhook"
+  description = "Test repo for mut: ${local.mut}"
   auto_init   = true
   visibility  = "public"
+  depends_on = [
+    random_id.this
+  ]
 }
 
 resource "github_repository_file" "test" {
@@ -35,10 +34,6 @@ resource "github_repository_file" "test" {
   ]
 }
 
-output "test" {
-  value = module.mut_github_webhook_request_validator.webhook_urls[github_repository.test.name]
-}
-
 module "mut_github_webhook_request_validator" {
   source = "../../modules/github-webhook-request-validator"
 
@@ -47,7 +42,7 @@ module "mut_github_webhook_request_validator" {
   api_name                      = "mut-${local.mut}"
   repos = [
     {
-      name = local.repo_name
+      name = github_repository.test.name
       filter_groups = [
         {
           events = ["push"]
@@ -55,9 +50,10 @@ module "mut_github_webhook_request_validator" {
       ]
     }
   ]
-  depends_on = [
-    github_repository.test
-  ]
+}
+
+data "aws_ssm_parameter" "github_token" {
+  name = "github-webhook-request-validator-github-token"
 }
 
 resource "null_resource" "not_sha_signed" {
@@ -68,8 +64,8 @@ resource "null_resource" "not_sha_signed" {
     command = <<EOF
 curl --silent \
   -H 'Content-Type: application/json' \
-  -H 'X-Hub-Signature-256" = ${sha256("test")}' \
-  -H 'X-GitHub-Event" : push' \
+  -H 'X-Hub-Signature-256:  ${sha256("test")}' \
+  -H 'X-GitHub-Event: push' \
   -d '{"text": "foo"}' \
   -o ${path.cwd}/.tmp/not_sha_signed.json \
   ${module.mut_github_webhook_request_validator.invoke_url}
@@ -85,8 +81,8 @@ resource "null_resource" "invalid_sha_sig" {
     command = <<EOF
 curl --silent \
   -H 'Content-Type: application/json' \
-  -H 'X-Hub-Signature-256" = sha256=${sha256("test")}' \
-  -H 'X-GitHub-Event" : push' \
+  -H 'X-Hub-Signature-256: sha256=${sha256("test")}' \
+  -H 'X-GitHub-Event: push' \
   -d '{"text": "foo"}' \
   -o ${path.cwd}/.tmp/invalid_sha_sig.json \
   ${module.mut_github_webhook_request_validator.invoke_url}
