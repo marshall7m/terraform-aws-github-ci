@@ -1,83 +1,51 @@
-# dynamic-github-source
+<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+## Requirements
 
-## Problem ##
+| Name | Version |
+|------|---------|
+| terraform | >=0.15.0 |
+| aws | >= 3.22 |
+| github | >=4.4.0 |
 
-Current implementation of AWS CodeBuild doesn't allow for dynamic repo and branch source. CodeBuild does allow for up to 12 secondary sources, although the buildspec would have to have additional logic to explicitly switch to the secondary source that was trigger via the CodeBuild Webhook. Another painful workaround is to create a Codebuild project for each repository. If each repo requires the same CodeBuild configurations, this can lead to multiple copies of the same CodeBuild project but with different sources. This can consequently clutter your AWS CodeBuild workspace especially if there are hundreds of repositories are included in this process.
+## Providers
 
-## Process ##
+| Name | Version |
+|------|---------|
+| archive | n/a |
+| aws | >= 3.22 |
+| github | >=4.4.0 |
+| local | n/a |
+| null | n/a |
+| random | n/a |
 
-![cloudcraft](terraform-aws-github-ci.png)
+## Inputs
 
-### Steps ###
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| api\_description | Description for API-Gateway | `string` | `"API used for custom GitHub webhooks"` | no |
+| api\_name | Name of API-Gateway | `string` | `null` | no |
+| async\_lambda\_invocation | Determines if the backend Lambda function for the API Gateway is invoked asynchronously.<br>If true, the API Gateway REST API method will not return the Lambda results to the client.<br>See for more info: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-integration-async.html | `bool` | `false` | no |
+| create\_github\_token\_ssm\_param | Determines if an AWS System Manager Parameter Store value should be created for the Github token | `bool` | `true` | no |
+| function\_name | Name of Lambda function | `string` | `"github-webhook-request-validator"` | no |
+| github\_secret\_ssm\_description | Github secret SSM parameter description | `string` | `"Secret value for Github Webhooks"` | no |
+| github\_secret\_ssm\_key | Key for github secret within AWS SSM Parameter Store | `string` | `"github-webhook-github-secret"` | no |
+| github\_secret\_ssm\_tags | Tags for Github webhook secret SSM parameter | `map(string)` | `{}` | no |
+| github\_token\_ssm\_description | Github token SSM parameter description | `string` | `"Github token used to give read access to the payload validator function to get file that differ between commits"` | no |
+| github\_token\_ssm\_key | AWS SSM Parameter Store key for sensitive Github personal token | `string` | `"github-webhook-validator-token"` | no |
+| github\_token\_ssm\_tags | Tags for Github token SSM parameter | `map(string)` | `{}` | no |
+| github\_token\_ssm\_value | Registered Github webhook token associated with the Github provider. If not provided, module looks for pre-existing SSM parameter via `github_token_ssm_key` | `string` | `""` | no |
+| lambda\_failure\_destination\_arns | AWS ARNs of services that will be invoked if Lambda function fails | `list(string)` | `[]` | no |
+| lambda\_success\_destination\_arns | AWS ARNs of services that will be invoked if Lambda function succeeds | `list(string)` | `[]` | no |
+| repos | List of named repos to create github webhooks for and their respective filter groups<br>Params:<br>  `name`: Repository name<br>  `filter_groups`: {<br>    `events` - List of Github Webhook events that will invoke the API. Currently only supports: `push` and `pull_request`.<br>    `pr_actions` - List of pull request actions (e.g. opened, edited, reopened, closed). See more under the action key at: https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#pull_request<br>    `base_refs` - List of base refs<br>    `head_refs` - List of head refs<br>    `actor_account_ids` - List of Github user IDs<br>    `commit_messages` - List of commit messages<br>    `file_paths` - List of file paths<br>    `exclude_matched_filter` - If set to true, labels filter group as invalid if it is matched<br>  } | <pre>list(object({<br>    name = string<br>    filter_groups = optional(list(object({<br>      events                 = list(string)<br>      pr_actions             = optional(list(string))<br>      base_refs              = optional(list(string))<br>      head_refs              = optional(list(string))<br>      actor_account_ids      = optional(list(string))<br>      commit_messages        = optional(list(string))<br>      file_paths             = optional(list(string))<br>      exclude_matched_filter = optional(bool)<br>    })))<br>  }))</pre> | `[]` | no |
 
-1. Github event is performed (e.g. user pushes new file, opens PR, etc.) that falls under one of the repository's event filters
-2. Github webhook sends a POST HTTP method request to the API Gateway's (AGW) REST API 
-3. AGW request integration maps the request to a format friendly format `{'headers': <Webhook headers>, 'body': <Webhook payload>}` Processed request is passed to the request validator function that compares the `sha256` value from the request header with the `sha256` value created with the Github secret value and request payload. If the values are equal, the Lambda function succeeds.
-5. The payload validator Lambda function is invoked asynchronously on success of the request validor Lambda Function. Payload validator function compares the payload to the filter groups. If the payload passes one of the filter groups, the Codebuild project is kicked off with the triggered repository's CodeBuild configurations ONLY for this build (after this build, CodeBuild project reverts to original configurations). The main attribute that is changed is the source configurations for the build. 
-6. CodeBuild performs the defined buildspec logic. User can define a global or repo-level buildspec that can be used for CI/CD, building AMIs, etc. 
+## Outputs
 
-## Non-Provider related Requirements
-- The environment in which the Terraform module is applied must have pip within it's `$PATH`. The `resource "null_resource" "lambda_pip_deps" {}` installs the `PyGithub` package locally and then is used within the payload validator function. 
+| Name | Description |
+|------|-------------|
+| cw\_log\_group\_arn | ARN of the CloudWatch log group associated with the Lambda function |
+| function\_arn | ARN of AWS Lambda function used to validate Github webhook request |
+| function\_name | Name of the Lambda function used to validate Github webhook request |
+| invoke\_url | API invoke URL the github webhook will ping |
+| webhook\_urls | Map of repo webhook URLs |
 
-## Usage
-
-Minimal viable configuration:
-
-```
-module "dynamic_github_source" {
-  source                         = "github.com/marshall7m/terraform-aws-codebuild/modules//dynamic-github-source"
-  create_github_secret_ssm_param = true
-  github_secret_ssm_value        = var.github_secret_ssm_value
-  github_token_ssm_value         = var.github_token
-  codebuild_buildspec            = file("buildspec.yaml")
-  repos = [
-    {
-      name = "test-repo"
-      filter_groups = [
-        {
-          events     = ["push"]
-        }
-      ]
-    }
-  ]
-}
-```
-
-Configure repo specific codebuild configurations via `codebuild_cfg` within `repos` list:
-
-```
-module "dynamic_github_source" {
-  source                         = "github.com/marshall7m/terraform-aws-codebuild/modules//dynamic-github-source"
-  create_github_secret_ssm_param = true
-  github_secret_ssm_value        = var.github_secret_ssm_value
-  github_token_ssm_value         = var.github_token
-  codebuild_name                 = "test-codebuild"
-  codebuild_buildspec            = file("buildspec.yaml")
-  repos = [
-    {
-      name = "test-repo"
-      codebuild_cfg = {
-        environment_variables = [
-          {
-            name  = "TEST"
-            value = "FOO"
-            type  = "PLAINTEXT"
-          }
-        ]
-      }
-      filter_groups = [
-        {
-          events     = ["push"]
-          file_paths = ["CHANGELOG.md"]
-        },
-        {
-          events     = ["pull_request"]
-          pr_actions = ["opened", "edited", "synchronize"]
-          file_paths = [".*\\.py$"]
-          head_refs  = ["test-branch"]
-        }
-      ]
-    }
-  ]
-}
-```
+<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

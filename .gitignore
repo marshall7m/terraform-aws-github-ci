@@ -7,6 +7,6 @@ terraform.tfstate*
 __pycache__
 .wget-hsts
 .bash_history
-modules/github-webhook-request-validator/deps/*
+*deps/*
 *.zip*
 *.tmp*

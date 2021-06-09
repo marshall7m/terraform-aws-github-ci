@@ -15,6 +15,7 @@ locals {
 }
 
 resource "aws_lambda_function_event_invoke_config" "lambda" {
+  count = length(lambda_destination_arns) > 0 ? 1 : 0
   function_name = module.lambda.function_name
   destination_config {
     dynamic "on_success" {
@@ -151,7 +152,7 @@ data "aws_iam_policy_document" "lambda" {
   }
 
   dynamic "statement" {
-    for_each = contains(data.aws_arn.lambda_dest[*].service, "sqs") ? [1] : []
+    for_each = contains(try(data.aws_arn.lambda_dest[*].service, []), "sqs") ? [1] : []
     content {
       sid    = "InvokeSqsDestination"
       effect = "Allow"
@@ -163,7 +164,7 @@ data "aws_iam_policy_document" "lambda" {
   }
 
   dynamic "statement" {
-    for_each = contains(data.aws_arn.lambda_dest[*].service, "sns") ? [1] : []
+    for_each = contains(try(data.aws_arn.lambda_dest[*].service, []), "sns") ? [1] : []
     content {
       sid    = "InvokeSnsDestination"
       effect = "Allow"
@@ -175,7 +176,7 @@ data "aws_iam_policy_document" "lambda" {
   }
 
   dynamic "statement" {
-    for_each = contains(data.aws_arn.lambda_dest[*].service, "events") ? [1] : []
+    for_each = contains(try(data.aws_arn.lambda_dest[*].service, []), "events") ? [1] : []
     content {
       sid    = "InvokeEventsDestination"
       effect = "Allow"
@@ -187,7 +188,7 @@ data "aws_iam_policy_document" "lambda" {
   }
 
   dynamic "statement" {
-    for_each = contains(data.aws_arn.lambda_dest[*].service, "lambda") ? [1] : []
+    for_each = contains(try(data.aws_arn.lambda_dest[*].service, []), "lambda") ? [1] : []
     content {
       sid    = "InvokeLambdaDestination"
       effect = "Allow"
