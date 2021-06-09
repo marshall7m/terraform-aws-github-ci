@@ -35,7 +35,7 @@ resource "github_repository_file" "test" {
 }
 
 module "mut_github_webhook_request_validator" {
-  source = "../../modules/github-webhook-request-validator"
+  source = "..//"
 
   create_github_token_ssm_param = false
   github_token_ssm_key          = "github-webhook-request-validator-github-token"
