@@ -45,7 +45,9 @@
 | cw\_log\_group\_arn | ARN of the CloudWatch log group associated with the Lambda function |
 | function\_arn | ARN of AWS Lambda function used to validate Github webhook request |
 | function\_name | Name of the Lambda function used to validate Github webhook request |
+| github\_token\_ssm\_arn | ARN of the AWS System Manager Parameter Store key used for the sensitive GitHub Token |
 | invoke\_url | API invoke URL the github webhook will ping |
+| lambda\_deps | Package depedency's file configurations for the Lambda function |
 | webhook\_urls | Map of repo webhook URLs |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

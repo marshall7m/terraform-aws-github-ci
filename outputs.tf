@@ -23,3 +23,13 @@ output "cw_log_group_arn" {
   description = "ARN of the CloudWatch log group associated with the Lambda function"
   value       = one([module.lambda.cw_log_group_arn])
 }
+
+output "lambda_deps" {
+  description = "Package depedency's file configurations for the Lambda function"
+  value       = data.archive_file.lambda_deps
+}
+
+output "github_token_ssm_arn" {
+  description = "ARN of the AWS System Manager Parameter Store key used for the sensitive GitHub Token"
+  value       = var.create_github_token_ssm_param == true ? aws_ssm_parameter.github_token.arn : data.aws_ssm_parameter.github_token.arn
+}

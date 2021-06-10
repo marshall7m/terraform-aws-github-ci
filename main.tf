@@ -15,7 +15,7 @@ locals {
 }
 
 resource "aws_lambda_function_event_invoke_config" "lambda" {
-  count = length(lambda_destination_arns) > 0 ? 1 : 0
+  count         = length(local.lambda_destination_arns) > 0 ? 1 : 0
   function_name = module.lambda.function_name
   destination_config {
     dynamic "on_success" {
@@ -69,7 +69,7 @@ module "lambda" {
 }
 
 
-# pip install runtime packages needed for request validator function
+# pip install runtime packages needed for function
 resource "null_resource" "lambda_pip_deps" {
   triggers = {
     zip_hash = fileexists("${path.module}/lambda_deps.zip") ? 0 : timestamp()
