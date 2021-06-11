@@ -134,7 +134,7 @@ data "aws_iam_policy_document" "lambda" {
     actions = [
       "ssm:GetParameter"
     ]
-    resources = [var.github_token_ssm_value != "" ? aws_ssm_parameter.github_token[0].arn : data.aws_ssm_parameter.github_token[0].arn]
+    resources = [try(aws_ssm_parameter.github_token[0].arn, data.aws_ssm_parameter.github_token[0].arn)]
   }
 
   statement {

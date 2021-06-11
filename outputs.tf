@@ -31,5 +31,5 @@ output "lambda_deps" {
 
 output "github_token_ssm_arn" {
   description = "ARN of the AWS System Manager Parameter Store key used for the sensitive GitHub Token"
-  value       = try(aws_ssm_parameter.github_token[0].arn, data.aws_ssm_parameter.github_token[0])
+  value       = try(aws_ssm_parameter.github_token[0].arn, data.aws_ssm_parameter.github_token[0].arn)
 }
