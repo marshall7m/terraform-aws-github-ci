@@ -1,15 +1,10 @@
 locals {
-  default_repos = [for repo in var.repos : merge(repo, {
+  repos = [for repo in var.repos : merge(repo, {
     filter_groups = [for filter_group in repo.filter_groups :
       defaults(filter_group, {
         exclude_matched_filter = false
       })
     ]
-  })]
-  repos = [for repo in local.default_repos : merge(repo, {
-    #pulls distinct filter group events to define the Github webhook events
-    events = distinct(flatten([for filter_group in repo.filter_groups :
-    filter_group.events if filter_group.exclude_matched_filter != true]))
   })]
   lambda_destination_arns = concat(var.lambda_success_destination_arns, var.lambda_failure_destination_arns)
 }
@@ -217,7 +212,9 @@ resource "github_repository_webhook" "this" {
   }
 
   active = true
-  events = each.value.events
+  #pulls distinct filter group events
+  events = distinct(flatten([for filter_group in each.value.filter_groups :
+  filter_group.events if filter_group.exclude_matched_filter != true]))
 }
 
 resource "aws_ssm_parameter" "github_secret" {

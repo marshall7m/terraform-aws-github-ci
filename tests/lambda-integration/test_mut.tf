@@ -52,10 +52,6 @@ module "mut_github_webhook_request_validator" {
   ]
 }
 
-data "aws_ssm_parameter" "github_token" {
-  name = "github-webhook-request-validator-github-token"
-}
-
 resource "null_resource" "not_sha_signed" {
   triggers = {
     run = timestamp()
