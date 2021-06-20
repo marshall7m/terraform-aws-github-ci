@@ -7,6 +7,6 @@ terraform.tfstate*
 __pycache__
 .wget-hsts
 .bash_history
-*deps/*
 *.zip*
 *.tmp*
+*deps/

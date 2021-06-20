@@ -66,6 +66,9 @@ module "lambda" {
       description      = "Dependencies for lambda function: ${var.function_name}"
     }
   ]
+  # depends_on = [
+  #   archive_file.lambda_function
+  # ]
 }
 
 

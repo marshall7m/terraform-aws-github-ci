@@ -51,3 +51,7 @@
 | webhook\_urls | Map of repo webhook URLs |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+
+## Features
+
+- Move Lambda webhook validator from Lambda integration to Lambda Authorizer once/if Lambda Authorizers can receive request `method.request.body`. This will open up the Lambda integration for user defined services. See issue: https://stackoverflow.com/questions/47400447/access-post-request-body-from-custom-authorizer-lambda-function

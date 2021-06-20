@@ -5,10 +5,6 @@ terraform {
       source  = "hashicorp/random"
       version = "3.1.0"
     }
-    testing = {
-      source  = "apparentlymart/testing"
-      version = "0.0.2"
-    }
     test = {
       source = "terraform.io/builtin/test"
     }
