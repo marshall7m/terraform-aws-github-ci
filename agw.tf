@@ -1,6 +1,8 @@
 locals {
-  api_id = var.create_api ? aws_api_gateway_rest_api.this[0].id : data.aws_api_gateway_rest_api.this[0].id
+  api    = var.create_api ? aws_api_gateway_rest_api.this[0] : data.aws_api_gateway_rest_api.this[0]
+  api_id = local.api.id
 }
+
 resource "aws_api_gateway_rest_api" "this" {
   count       = var.create_api ? 1 : 0
   name        = var.api_name
@@ -23,7 +25,7 @@ resource "aws_api_gateway_stage" "this" {
 
 resource "aws_api_gateway_resource" "this" {
   rest_api_id = local.api_id
-  parent_id   = local.api_id.root_resource_id
+  parent_id   = local.api.root_resource_id
   path_part   = "github"
 }
 
