@@ -1,6 +1,6 @@
 output "github_webhook_invoke_url" {
   description = "API URL the github webhook will ping"
-  value       = var.manage_api_deployments ? "${aws_api_gateway_deployment.this[0].invoke_url}${aws_api_gateway_stage.this[0].stage_name}${aws_api_gateway_resource.this.path}" : null
+  value       = "${aws_api_gateway_deployment.this.invoke_url}${aws_api_gateway_stage.this.stage_name}${aws_api_gateway_resource.this.path}"
 }
 
 output "webhook_urls" {
@@ -36,12 +36,12 @@ output "github_token_ssm_arn" {
 
 output "api_stage_name" {
   description = "API stage name"
-  value       = try(aws_api_gateway_stage.this[0].stage_name, null)
+  value       = try(aws_api_gateway_stage.this.stage_name, null)
 }
 
 output "deployment_invoke_url" {
   description = "API stage's associated deployment URL"
-  value       = try(aws_api_gateway_deployment.this[0].invoke_url, null)
+  value       = try(aws_api_gateway_deployment.this.invoke_url, null)
 }
 
 output "api_changes_sha" {
