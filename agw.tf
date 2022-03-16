@@ -21,7 +21,7 @@ resource "aws_api_gateway_stage" "this" {
   count         = var.manage_api_deployments ? 1 : 0
   deployment_id = aws_api_gateway_deployment.this[0].id
   rest_api_id   = local.api_id
-  stage_name    = "prod"
+  stage_name    = var.stage_name
 }
 
 resource "aws_api_gateway_resource" "this" {
@@ -181,9 +181,7 @@ resource "aws_api_gateway_deployment" "this" {
   lifecycle {
     create_before_destroy = true
   }
-  triggers = {
-    redeployment = filesha1("${path.module}/agw.tf")
-  }
+  triggers = merge({ github_webhook = filesha1("${path.module}/agw.tf") }, var.deployment_triggers)
   depends_on = [
     aws_api_gateway_resource.this,
     aws_api_gateway_method.this,

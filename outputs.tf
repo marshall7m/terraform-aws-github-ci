@@ -1,6 +1,6 @@
 output "invoke_url" {
   description = "API invoke URL the github webhook will ping"
-  value       = "${aws_api_gateway_deployment.this.invoke_url}${aws_api_gateway_stage.this.stage_name}${aws_api_gateway_resource.this.path}"
+  value       = var.manage_api_deployments ? "${aws_api_gateway_deployment.this[0].invoke_url}${aws_api_gateway_stage.this[0].stage_name}${aws_api_gateway_resource.this.path}" : null
 }
 
 output "webhook_urls" {

@@ -22,7 +22,17 @@ variable "manage_api_deployments" {
   type        = bool
 }
 
+variable "stage_name" {
+  description = "Stage name for the API deployment"
+  type        = string
+  default     = "prod"
+}
 
+variable "deployment_triggers" {
+  description = "Arbitrary mapping that when changed causes a redeployment of the API"
+  type        = map(string)
+  default     = {}
+}
 
 variable "repos" {
   description = <<EOF
