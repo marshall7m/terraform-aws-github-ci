@@ -37,12 +37,14 @@
 | github\_token\_ssm\_value | Registered Github webhook token associated with the Github provider. If not provided, module looks for pre-existing SSM parameter via `github_token_ssm_key` | `string` | `""` | no |
 | lambda\_failure\_destination\_arns | AWS ARNs of services that will be invoked if Lambda function fails | `list(string)` | `[]` | no |
 | lambda\_success\_destination\_arns | AWS ARNs of services that will be invoked if Lambda function succeeds | `list(string)` | `[]` | no |
+| manage\_api\_deployments | Determines if Terraform module should manage when API is deployed | `bool` | n/a | yes |
 | repos | List of named repos to create github webhooks for and their respective filter groups<br>Params:<br>  `name`: Repository name<br>  `filter_groups`: {<br>    `events` - List of Github Webhook events that will invoke the API. Currently only supports: `push` and `pull_request`.<br>    `pr_actions` - List of pull request actions (e.g. opened, edited, reopened, closed). See more under the action key at: https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#pull_request<br>    `base_refs` - List of base refs<br>    `head_refs` - List of head refs<br>    `actor_account_ids` - List of Github user IDs<br>    `commit_messages` - List of commit messages<br>    `file_paths` - List of file paths<br>    `exclude_matched_filter` - If set to true, labels filter group as invalid if it is matched<br>  } | <pre>list(object({<br>    name = string<br>    filter_groups = optional(list(object({<br>      events                 = list(string)<br>      pr_actions             = optional(list(string))<br>      base_refs              = optional(list(string))<br>      head_refs              = optional(list(string))<br>      actor_account_ids      = optional(list(string))<br>      commit_messages        = optional(list(string))<br>      file_paths             = optional(list(string))<br>      exclude_matched_filter = optional(bool)<br>    })))<br>  }))</pre> | `[]` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
+| api\_changes\_sha | SHA value of file that contains API-related configurations. Can be used as a trigger for API deployments (see AWS resource: aws\_api\_gateway\_deployment) |
 | api\_stage\_name | API stage name |
 | cw\_log\_group\_arn | ARN of the CloudWatch log group associated with the Lambda function |
 | function\_arn | ARN of AWS Lambda function used to validate Github webhook request |

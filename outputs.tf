@@ -36,5 +36,10 @@ output "github_token_ssm_arn" {
 
 output "api_stage_name" {
   description = "API stage name"
-  value       = aws_api_gateway_stage.this.stage_name
+  value       = try(aws_api_gateway_stage.this[0].stage_name, null)
+}
+
+output "api_changes_sha" {
+  description = "SHA value of file that contains API-related configurations. Can be used as a trigger for API deployments (see AWS resource: aws_api_gateway_deployment)"
+  value       = filesha1("${path.module}/agw.tf")
 }

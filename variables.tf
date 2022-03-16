@@ -17,6 +17,11 @@ variable "api_description" {
   default     = "API used for custom GitHub webhooks"
 }
 
+variable "manage_api_deployments" {
+  description = "Determines if Terraform module should manage when API is deployed"
+  type        = bool
+}
+
 
 
 variable "repos" {
