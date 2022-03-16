@@ -1,4 +1,10 @@
 # AGW #
+variable "create_api" {
+  description = "Determines if Terraform should create and manage the API or if it should load an existing one"
+  type        = bool
+  default     = true
+}
+
 variable "api_name" {
   description = "Name of API-Gateway"
   type        = string

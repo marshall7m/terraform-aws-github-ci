@@ -25,6 +25,7 @@
 | api\_description | Description for API-Gateway | `string` | `"API used for custom GitHub webhooks"` | no |
 | api\_name | Name of API-Gateway | `string` | `null` | no |
 | async\_lambda\_invocation | Determines if the backend Lambda function for the API Gateway is invoked asynchronously.<br>If true, the API Gateway REST API method will not return the Lambda results to the client.<br>See for more info: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-integration-async.html | `bool` | `false` | no |
+| create\_api | Determines if Terraform should create and manage the API or if it should load an existing one | `bool` | `true` | no |
 | create\_github\_token\_ssm\_param | Determines if an AWS System Manager Parameter Store value should be created for the Github token | `bool` | `true` | no |
 | function\_name | Name of Lambda function | `string` | `"github-webhook-request-validator"` | no |
 | github\_secret\_ssm\_description | Github secret SSM parameter description | `string` | `"Secret value for Github Webhooks"` | no |
@@ -42,6 +43,7 @@
 
 | Name | Description |
 |------|-------------|
+| api\_stage\_name | API stage name |
 | cw\_log\_group\_arn | ARN of the CloudWatch log group associated with the Lambda function |
 | function\_arn | ARN of AWS Lambda function used to validate Github webhook request |
 | function\_name | Name of the Lambda function used to validate Github webhook request |

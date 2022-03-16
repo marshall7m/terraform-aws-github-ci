@@ -1,4 +1,8 @@
+locals {
+  api_id = var.create_api ? aws_api_gateway_rest_api.this[0].id : data.aws_api_gateway_rest_api.this[0].id
+}
 resource "aws_api_gateway_rest_api" "this" {
+  count       = var.create_api ? 1 : 0
   name        = var.api_name
   description = var.api_description
   endpoint_configuration {
@@ -6,20 +10,25 @@ resource "aws_api_gateway_rest_api" "this" {
   }
 }
 
+data "aws_api_gateway_rest_api" "this" {
+  count = var.create_api == false ? 1 : 0
+  name  = var.api_name
+}
+
 resource "aws_api_gateway_stage" "this" {
   deployment_id = aws_api_gateway_deployment.this.id
-  rest_api_id   = aws_api_gateway_rest_api.this.id
+  rest_api_id   = local.api_id
   stage_name    = "prod"
 }
 
 resource "aws_api_gateway_resource" "this" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
-  parent_id   = aws_api_gateway_rest_api.this.root_resource_id
+  rest_api_id = local.api_id
+  parent_id   = local.api_id.root_resource_id
   path_part   = "github"
 }
 
 resource "aws_api_gateway_method" "this" {
-  rest_api_id   = aws_api_gateway_rest_api.this.id
+  rest_api_id   = local.api_id
   resource_id   = aws_api_gateway_resource.this.id
   http_method   = "POST"
   authorization = "NONE"
@@ -30,7 +39,7 @@ resource "aws_api_gateway_method" "this" {
 }
 
 resource "aws_api_gateway_integration" "this" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
+  rest_api_id = local.api_id
   resource_id = aws_api_gateway_method.this.resource_id
   http_method = aws_api_gateway_method.this.http_method
 
@@ -51,7 +60,7 @@ resource "aws_api_gateway_integration" "this" {
 }
 
 resource "aws_api_gateway_model" "this" {
-  rest_api_id  = aws_api_gateway_rest_api.this.id
+  rest_api_id  = local.api_id
   name         = "CustomErrorModel"
   content_type = "application/json"
 
@@ -79,7 +88,7 @@ EOF
 }
 
 resource "aws_api_gateway_method_response" "status_400" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
+  rest_api_id = local.api_id
   resource_id = aws_api_gateway_resource.this.id
   http_method = aws_api_gateway_method.this.http_method
   status_code = "400"
@@ -89,7 +98,7 @@ resource "aws_api_gateway_method_response" "status_400" {
 }
 
 resource "aws_api_gateway_integration_response" "status_400" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
+  rest_api_id = local.api_id
   resource_id = aws_api_gateway_resource.this.id
   http_method = aws_api_gateway_integration.this.http_method
   status_code = "400"
@@ -112,7 +121,7 @@ resource "aws_api_gateway_integration_response" "status_400" {
   ]
 }
 resource "aws_api_gateway_method_response" "status_500" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
+  rest_api_id = local.api_id
   resource_id = aws_api_gateway_resource.this.id
   http_method = aws_api_gateway_method.this.http_method
   status_code = "500"
@@ -122,7 +131,7 @@ resource "aws_api_gateway_method_response" "status_500" {
 }
 
 resource "aws_api_gateway_integration_response" "status_500" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
+  rest_api_id = local.api_id
   resource_id = aws_api_gateway_resource.this.id
   http_method = aws_api_gateway_integration.this.http_method
   status_code = "500"
@@ -146,14 +155,14 @@ resource "aws_api_gateway_integration_response" "status_500" {
 }
 
 resource "aws_api_gateway_method_response" "status_200" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
+  rest_api_id = local.api_id
   resource_id = aws_api_gateway_resource.this.id
   http_method = aws_api_gateway_method.this.http_method
   status_code = "200"
 }
 
 resource "aws_api_gateway_integration_response" "status_200" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
+  rest_api_id = local.api_id
   resource_id = aws_api_gateway_resource.this.id
   http_method = aws_api_gateway_integration.this.http_method
   status_code = "200"
@@ -164,7 +173,7 @@ resource "aws_api_gateway_integration_response" "status_200" {
 }
 
 resource "aws_api_gateway_deployment" "this" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
+  rest_api_id = local.api_id
   lifecycle {
     create_before_destroy = true
   }
