@@ -49,10 +49,11 @@
 | api\_changes\_sha | SHA value of file that contains API-related configurations. Can be used as a trigger for API deployments (see AWS resource: aws\_api\_gateway\_deployment) |
 | api\_stage\_name | API stage name |
 | cw\_log\_group\_arn | ARN of the CloudWatch log group associated with the Lambda function |
+| deployment\_invoke\_url | API stage's associated deployment URL |
 | function\_arn | ARN of AWS Lambda function used to validate Github webhook request |
 | function\_name | Name of the Lambda function used to validate Github webhook request |
 | github\_token\_ssm\_arn | ARN of the AWS System Manager Parameter Store key used for the sensitive GitHub Token |
-| invoke\_url | API invoke URL the github webhook will ping |
+| github\_webhook\_invoke\_url | API URL the github webhook will ping |
 | lambda\_deps | Package depedency's file configurations for the Lambda function |
 | webhook\_urls | Map of repo webhook URLs |
 
