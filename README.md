@@ -30,7 +30,7 @@
 | deployment\_triggers | Arbitrary mapping that when changed causes a redeployment of the API | `map(string)` | `{}` | no |
 | function\_name | Name of Lambda function | `string` | `"github-webhook-request-validator"` | no |
 | github\_secret\_ssm\_description | Github secret SSM parameter description | `string` | `"Secret value for Github Webhooks"` | no |
-| github\_secret\_ssm\_key | Key for github secret within AWS SSM Parameter Store | `string` | `"github-webhook-github-secret"` | no |
+| github\_secret\_ssm\_key | Key for github secret within AWS SSM Parameter Store | `string` | `"github-webhook-secret"` | no |
 | github\_secret\_ssm\_tags | Tags for Github webhook secret SSM parameter | `map(string)` | `{}` | no |
 | github\_token\_ssm\_description | Github token SSM parameter description | `string` | `"Github token used to give read access to the payload validator function to get file that differ between commits"` | no |
 | github\_token\_ssm\_key | AWS SSM Parameter Store key for sensitive Github personal token | `string` | `"github-webhook-validator-token"` | no |
@@ -54,6 +54,7 @@
 | github\_token\_ssm\_arn | ARN of the AWS System Manager Parameter Store key used for the sensitive GitHub Token |
 | github\_webhook\_invoke\_url | API URL the github webhook will ping |
 | lambda\_deps | Package depedency's file configurations for the Lambda function |
+| webhook\_ids | Map of repo webhook URLs |
 | webhook\_urls | Map of repo webhook URLs |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

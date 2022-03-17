@@ -9,6 +9,12 @@ output "webhook_urls" {
   sensitive   = true
 }
 
+output "webhook_ids" {
+  description = "Map of repo webhook URLs"
+  value       = { for repo in github_repository_webhook.this : repo.repository => split("/", repo.url)[-1] }
+  sensitive   = true
+}
+
 output "function_arn" {
   description = "ARN of AWS Lambda function used to validate Github webhook request"
   value       = module.lambda.function_arn
