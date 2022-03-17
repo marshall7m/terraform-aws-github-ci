@@ -11,7 +11,7 @@ output "webhook_urls" {
 
 output "webhook_ids" {
   description = "Map of repo webhook URLs"
-  value       = { for repo in github_repository_webhook.this : repo.repository => split("/", repo.url)[-1] }
+  value       = { for repo in github_repository_webhook.this : repo.repository => element(split("/", repo.url), length(split("/", repo.url)) - 1) }
   sensitive   = true
 }
 
