@@ -7,7 +7,7 @@ from github import Github
 import os
 import re
 from typing import List, Union, Dict, Any
-
+from pprint import pformat
 
 log = logging.getLogger()
 log.setLevel(logging.DEBUG)
@@ -25,6 +25,8 @@ def lambda_handler(event, context):
         - Filter groups and events must be specified in /opt/filter_groups.json
     """
 
+    log.debug(f'Event\n{pformat(event)}')
+    
     try:
         validate_sig(event['headers']['X-Hub-Signature-256'], event['body'])
     except Exception as e:
