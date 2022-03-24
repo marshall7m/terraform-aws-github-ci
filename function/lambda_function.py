@@ -8,9 +8,13 @@ import os
 import re
 from typing import List, Union, Dict, Any
 from pprint import pformat
+import sys
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
+stream = logging.StreamHandler(sys.stdout)
+log.addHandler(stream)
 log.setLevel(logging.DEBUG)
+
 ssm = boto3.client('ssm')
 
 def lambda_handler(event, context):
