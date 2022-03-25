@@ -7,8 +7,12 @@ from github import Github
 import os
 import re
 from typing import List, Union, Dict, Any
+<<<<<<< HEAD
 from pprint import pformat
 import sys
+=======
+
+>>>>>>> parent of e2edad6... replace for_each with count for gh webhook resource to handle case of repo created in parent tf cfg
 
 log = logging.getLogger(__name__)
 stream = logging.StreamHandler(sys.stdout)
@@ -29,8 +33,6 @@ def lambda_handler(event, context):
         - Filter groups and events must be specified in /opt/filter_groups.json
     """
 
-    log.debug(f'Event\n{pformat(event)}')
-    
     try:
         validate_sig(event['headers']['X-Hub-Signature-256'], event['body'])
     except Exception as e:

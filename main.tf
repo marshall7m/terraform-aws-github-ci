@@ -201,8 +201,8 @@ resource "aws_iam_policy" "lambda" {
 }
 
 resource "github_repository_webhook" "this" {
-  count      = length(local.repos)
-  repository = local.repos[count.index]["name"]
+  for_each   = { for repo in local.repos : repo.name => repo }
+  repository = each.value.name
 
   configuration {
     url          = "${aws_api_gateway_deployment.this.invoke_url}${aws_api_gateway_stage.this.stage_name}${aws_api_gateway_resource.this.path}"
@@ -213,7 +213,7 @@ resource "github_repository_webhook" "this" {
 
   active = true
   #pulls distinct filter group events
-  events = distinct(flatten([for filter_group in local.repos[count.index]["filter_groups"] :
+  events = distinct(flatten([for filter_group in each.value.filter_groups :
   filter_group.events if filter_group.exclude_matched_filter != true]))
 }
 
