@@ -48,13 +48,8 @@ Params:
   type = list(object({
     name = string
     filter_groups = optional(list(object({
-      events                 = list(string)
-      pr_actions             = optional(list(string))
-      base_refs              = optional(list(string))
-      head_refs              = optional(list(string))
-      actor_account_ids      = optional(list(string))
-      commit_messages        = optional(list(string))
-      file_paths             = optional(list(string))
+      type                   = string
+      pattern                = string
       exclude_matched_filter = optional(bool)
     })))
   }))
