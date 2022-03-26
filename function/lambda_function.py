@@ -144,14 +144,10 @@ def validate_payload(payload: dict, filter_groups: List[dict]) -> None:
                 log.debug(f'Filter: {filter_entry}')
                 for value in target:
                     log.debug(f'Target value:\n{value}')
-                    # if pattern match and pattern should included
-                    if re.search(filter_entry['pattern'], value) and not filter_entry['exclude_matched_filter']:
+                    if (re.search(filter_entry['pattern'], value) and not filter_entry['exclude_matched_filter']) or (re.search(filter_entry['pattern'], value) and filter_entry['exclude_matched_filter']):
                         log.debug('Matched')
                         valid_count += 1
-                    # if pattern doesn't match and pattern should be excluded
-                    elif not re.search(filter_entry['pattern'], value) and filter_entry['exclude_matched_filter']:
-                        valid_count += 1
-                        log.debug('Matched')
+                        continue
                     else:
                         log.debug('Not Matched')
                 
