@@ -29,7 +29,7 @@ def lambda_handler(event, context):
         - Filter groups and events must be specified in /opt/filter_groups.json
     """
 
-    log.debug(f'Event\n{pformat(event)}')
+    log.debug(f'Event:\n{pformat(event)}')
 
     try:
         validate_sig(event['headers']['X-Hub-Signature-256'], event['body'])
@@ -44,12 +44,14 @@ def lambda_handler(event, context):
         raise LambdaException(api_exception_json)
 
     payload = json.loads(event['body'])
+    event_header = event['headers']['X-GitHub-Event']
     repo_name = payload['repository']['name']
     
     with open('/opt/filter_groups.json') as f:
         filter_groups = json.load(f)[repo_name]
-
+    
     log.info(f'Triggered Repo: {repo_name}')
+    log.info(f'Event: {event}')
     log.info(f'Filter Groups: {filter_groups}')
     
     if filter_groups is None:
@@ -57,7 +59,7 @@ def lambda_handler(event, context):
     else:
         try:
             log.info('Validating payload')
-            validate_payload(payload, filter_groups)
+            validate_payload(event_header, payload, filter_groups)
         except Exception as e:
             api_exception_json = json.dumps(
                 {
@@ -101,7 +103,7 @@ def validate_sig(header_sig: str, payload: str) -> None:
     if not authorized:
        raise ClientException('Header signature and expected signature do not match')
 
-def validate_payload(payload: dict, filter_groups: List[dict]) -> None:
+def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> None:
     """
     Checks if payload body passes atleast one filter group
 
@@ -112,10 +114,10 @@ def validate_payload(payload: dict, filter_groups: List[dict]) -> None:
         github_token = ssm.get_parameter(Name=os.environ['GITHUB_TOKEN_SSM_KEY'], WithDecryption=True)['Parameter']['Value']
         gh = Github(github_token)
         repo = gh.get_repo(payload['repository']['full_name'])
-    except Exception:
+    except Exception as e:
+        logging.error(e, exc_info=True)
         raise ServerException("Internal server error")
     try:
-        event = event['headers']['X-GitHub-Event']
         if event == 'pull_request':
             payload_mapping = {
                 'event': event,
@@ -140,8 +142,8 @@ def validate_payload(payload: dict, filter_groups: List[dict]) -> None:
         for group in filter_groups:
             valid_count = 0
             for filter_entry in group:
-                target = [payload_mapping[filter_entry['type']]] if isinstance(payload_mapping[filter_entry['type']], str) else payload_mapping[filter_entry['type']]
                 log.debug(f'Filter: {filter_entry}')
+                target = [payload_mapping[filter_entry['type']]] if isinstance(payload_mapping[filter_entry['type']], str) else payload_mapping[filter_entry['type']]
                 for value in target:
                     log.debug(f'Target value:\n{value}')
                     if (re.search(filter_entry['pattern'], value) and not filter_entry['exclude_matched_filter']) or (re.search(filter_entry['pattern'], value) and filter_entry['exclude_matched_filter']):
@@ -154,7 +156,8 @@ def validate_payload(payload: dict, filter_groups: List[dict]) -> None:
             if valid_count == len(group):
                 valid = True
                 break
-    except Exception:
+    except Exception as e:
+        logging.error(e, exc_info=True)
         raise ServerException("Internal server error")
 
     if valid:

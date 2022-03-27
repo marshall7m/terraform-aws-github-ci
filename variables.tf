@@ -45,14 +45,14 @@ Params:
     `exclude_matched_filter` - If set to true, labels filter group as invalid if it is matched
   }
   EOF
-  type = list(object({
+  type = list(list(object({
     name = string
     filter_groups = optional(list(object({
       type                   = string
       pattern                = string
       exclude_matched_filter = optional(bool)
     })))
-  }))
+  })))
   default = []
 }
 
