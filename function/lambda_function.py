@@ -29,7 +29,7 @@ def lambda_handler(event, context):
         - Filter groups and events must be specified in /opt/filter_groups.json
     """
 
-    log.debug(f'Event:\n{pformat(event)}')
+    log.debug(f'Event:\n{event}')
 
     try:
         validate_sig(event['headers']['X-Hub-Signature-256'], event['body'])
@@ -51,7 +51,7 @@ def lambda_handler(event, context):
         filter_groups = json.load(f)[repo_name]
     
     log.info(f'Triggered Repo: {repo_name}')
-    log.info(f'Event: {event}')
+    log.info(f'GitHub Event: {event_header}')
     log.info(f'Filter Groups: {filter_groups}')
     
     if filter_groups is None:
@@ -149,10 +149,11 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
                     if (re.search(filter_entry['pattern'], value) and not filter_entry['exclude_matched_filter']) or (re.search(filter_entry['pattern'], value) and filter_entry['exclude_matched_filter']):
                         log.debug('Matched')
                         valid_count += 1
-                        continue
+                        #only one value out of the target needs to be matched for `file_path` filtering
+                        break
                     else:
                         log.debug('Not Matched')
-                
+            log.debug(f'{valid_count}/{len(group)} filters succeeded')
             if valid_count == len(group):
                 valid = True
                 break
