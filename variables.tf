@@ -40,7 +40,7 @@ Params:
       {
         `type`: The type of filter
           (
-            `events` - List of Github Webhook events that will invoke the API. Currently only supports: `push` and `pull_request`.
+            `event` - List of Github Webhook events that will invoke the API. Currently only supports: `push` and `pull_request`.
             `pr_actions` - List of pull request actions (e.g. opened, edited, reopened, closed). See more under the action key at: https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#pull_request
             `base_refs` - List of base refs
             `head_refs` - List of head refs
@@ -48,7 +48,7 @@ Params:
             `commit_messages` - List of commit messages
             `file_paths` - List of file paths
           )
-        `pattern`: Regex pattern that is searched for within the related event attribute
+        `pattern`: Regex pattern that is searched for within the related event attribute. For `type` = `event`, use a single Github webhook event and not a regex pattern.
         `exclude_matched_filter` - If set to true, labels filter group as invalid if it is matched
       }
     ]

@@ -214,7 +214,7 @@ resource "github_repository_webhook" "this" {
   active = true
   #pulls distinct filter group events
   events = distinct(flatten([for group in each.value.filter_groups : [for filter in group :
-  filter.pattern if filter_group.type == "event" && filter_group.exclude_matched_filter != true]]))
+  filter.pattern if filter.type == "event" && filter.exclude_matched_filter != true]]))
 }
 
 resource "aws_ssm_parameter" "github_secret" {
