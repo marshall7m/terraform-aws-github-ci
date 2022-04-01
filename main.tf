@@ -40,7 +40,7 @@ module "lambda" {
     {
       statement_id = "APIGatewayInvokeAccess"
       principal    = "apigateway.amazonaws.com"
-      arn          = "${local.api.execution_arn}/*/*"
+      arn          = "${local.execution_arn}/*/*"
     }
   ]
   enable_cw_logs = true

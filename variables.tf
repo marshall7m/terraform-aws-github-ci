@@ -1,12 +1,23 @@
 # AGW #
-variable "create_api" {
-  description = "Determines if Terraform should create and manage the API or if it should load an existing one"
-  type        = bool
-  default     = true
+variable "api_id" {
+  description = "Pre-existing AWS API ID to attach resources to. If not specified, a new API will be created and defining var.api_name will be required"
+  type        = string
+  default     = null
+}
+variable "root_resource_id" {
+  description = "Pre-existing AWS API resource ID associated with the API defined within var.api_id to be used as the root resource ID for the github API resource"
+  type        = string
+  default     = null
+}
+
+variable "execution_arn" {
+  description = "Pre-existing AWS API execution ARN that will be allowed to invoke the Lambda function"
+  type        = string
+  default     = null
 }
 
 variable "api_name" {
-  description = "Name of API-Gateway"
+  description = "Name of API-Gateway to be created"
   type        = string
   default     = null
 }
