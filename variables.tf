@@ -1,4 +1,9 @@
 # AGW #
+variable "create_api" {
+  description = "Determines if Terraform module just create the AWS REST API"
+  type        = bool
+}
+
 variable "api_id" {
   description = "Pre-existing AWS API ID to attach resources to. If not specified, a new API will be created and defining var.api_name will be required"
   type        = string

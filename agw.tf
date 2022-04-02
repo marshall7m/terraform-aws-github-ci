@@ -1,10 +1,10 @@
 locals {
-  api_id        = var.api_id == null ? aws_api_gateway_rest_api.this[0].id : var.api_id
+  api_id        = var.create_api ? aws_api_gateway_rest_api.this[0].id : var.api_id
   execution_arn = var.execution_arn == null ? aws_api_gateway_rest_api.this[0].execution_arn : var.execution_arn
 }
 
 resource "aws_api_gateway_rest_api" "this" {
-  count       = var.api_id == null ? 1 : 0
+  count       = var.create_api ? 1 : 0
   name        = var.api_name
   description = var.api_description
   endpoint_configuration {
@@ -20,7 +20,7 @@ resource "aws_api_gateway_stage" "this" {
 
 resource "aws_api_gateway_resource" "this" {
   rest_api_id = local.api_id
-  parent_id   = var.api_id == null ? aws_api_gateway_rest_api.this[0].root_resource_id : var.root_resource_id
+  parent_id   = var.create_api ? aws_api_gateway_rest_api.this[0].root_resource_id : var.root_resource_id
   path_part   = "github"
   lifecycle {
     create_before_destroy = true
