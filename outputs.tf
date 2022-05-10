@@ -35,11 +35,6 @@ output "lambda_deps" {
   value       = data.archive_file.lambda_deps
 }
 
-output "github_token_ssm_arn" {
-  description = "ARN of the AWS System Manager Parameter Store key used for the sensitive GitHub Token"
-  value       = try(aws_ssm_parameter.github_token[0].arn, data.aws_ssm_parameter.github_token[0].arn)
-}
-
 output "api_stage_name" {
   description = "API stage name"
   value       = try(aws_api_gateway_stage.this.stage_name, null)

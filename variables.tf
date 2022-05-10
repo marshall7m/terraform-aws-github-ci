@@ -81,42 +81,7 @@ Params:
   default = []
 }
 
-# SSM #
-
-## github-token ##
-
-variable "github_token_ssm_description" {
-  description = "Github token SSM parameter description"
-  type        = string
-  default     = "Github token used to give read access to the payload validator function to get file that differ between commits" #tfsec:ignore:GEN001
-}
-
-variable "github_token_ssm_key" {
-  description = "AWS SSM Parameter Store key for sensitive Github personal token"
-  type        = string
-  default     = "github-webhook-validator-token" #tfsec:ignore:GEN001
-}
-
-variable "github_token_ssm_value" {
-  description = "Registered Github webhook token associated with the Github provider. If not provided, module looks for pre-existing SSM parameter via `github_token_ssm_key`"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "create_github_token_ssm_param" {
-  description = "Determines if an AWS System Manager Parameter Store value should be created for the Github token"
-  type        = bool
-  default     = true
-}
-
-variable "github_token_ssm_tags" {
-  description = "Tags for Github token SSM parameter"
-  type        = map(string)
-  default     = {}
-}
-
-## github-secret ##
+# SSM GITHUB SECRET #
 
 variable "github_secret_ssm_key" {
   description = "Key for github secret within AWS SSM Parameter Store"

@@ -24,8 +24,6 @@ def lambda_handler(event, context):
     Requirements:
         - Payload body must be mapped to the key `body`
         - Payload headers must be mapped to the key `headers`
-        - Pre-existing SSM Paramter Store value for Github token. Parameter key must be specified under Lambda's env var: `GITHUB_TOKEN_SSM_KEY`
-            (used to get filepaths that changed between head and base refs via PyGithub)
         - Filter groups and events must be specified in /opt/filter_groups.json
     """
 
@@ -110,14 +108,11 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
     :param payload: Github webhook payload
     :param filter_groups: List of filters to check payload with
     """
+    
     try:
-        github_token = ssm.get_parameter(Name=os.environ['GITHUB_TOKEN_SSM_KEY'], WithDecryption=True)['Parameter']['Value']
-        gh = Github(github_token)
+        gh = Github()
         repo = gh.get_repo(payload['repository']['full_name'])
-    except Exception as e:
-        logging.error(e, exc_info=True)
-        raise ServerException("Internal server error")
-    try:
+        
         if event == 'pull_request':
             payload_mapping = {
                 'event': event,

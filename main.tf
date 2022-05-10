@@ -46,7 +46,6 @@ module "lambda" {
   enable_cw_logs = true
   env_vars = {
     GITHUB_WEBHOOK_SECRET_SSM_KEY = var.github_secret_ssm_key
-    GITHUB_TOKEN_SSM_KEY          = var.github_token_ssm_key
   }
   custom_role_policy_arns = [
     "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
@@ -71,7 +70,7 @@ resource "null_resource" "lambda_pip_deps" {
   }
   provisioner "local-exec" {
     command = <<EOF
-    pip install --target ${path.module}/deps/python PyGithub==1.54.1
+    pip install --upgrade --target ${path.module}/deps/python PyGithub==1.54.1
     EOF
   }
 }
@@ -107,30 +106,7 @@ data "aws_kms_key" "ssm" {
   key_id = "alias/aws/ssm"
 }
 
-resource "aws_ssm_parameter" "github_token" {
-  count       = var.create_github_token_ssm_param && var.github_token_ssm_value != "" ? 1 : 0
-  name        = var.github_token_ssm_key
-  description = var.github_token_ssm_description
-  type        = "SecureString"
-  value       = var.github_token_ssm_value
-  tags        = var.github_token_ssm_tags
-}
-
-data "aws_ssm_parameter" "github_token" {
-  count = var.create_github_token_ssm_param == false && var.github_token_ssm_value == "" ? 1 : 0
-  name  = var.github_token_ssm_key
-}
-
 data "aws_iam_policy_document" "lambda" {
-
-  statement {
-    sid    = "GithubWebhookTokenReadAccess"
-    effect = "Allow"
-    actions = [
-      "ssm:GetParameter"
-    ]
-    resources = [try(aws_ssm_parameter.github_token[0].arn, data.aws_ssm_parameter.github_token[0].arn)]
-  }
 
   statement {
     sid       = "GithubWebhookSecretReadAccess"
