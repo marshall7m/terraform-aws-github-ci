@@ -32,6 +32,7 @@ def lambda_handler(event, context):
     try:
         validate_sig(event['headers']['X-Hub-Signature-256'], event['body'])
     except Exception as e:
+        logging.error(e, exc_info=True)
         api_exception_json = json.dumps(
             {
                 "isError": True,
@@ -59,6 +60,7 @@ def lambda_handler(event, context):
             log.info('Validating payload')
             validate_payload(event_header, payload, filter_groups)
         except Exception as e:
+            logging.error(e, exc_info=True)
             api_exception_json = json.dumps(
                 {
                     "isError": True,
@@ -68,7 +70,6 @@ def lambda_handler(event, context):
             )
             raise LambdaException(api_exception_json)
 
-    print("Request was successful")
     return {"message": "Request was successful"}
 
 def validate_sig(header_sig: str, payload: str) -> None:
@@ -112,7 +113,6 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
     try:
         gh = Github()
         repo = gh.get_repo(payload['repository']['full_name'])
-        
         if event == 'pull_request':
             payload_mapping = {
                 'event': event,
@@ -129,10 +129,10 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
                 'file_paths': [path.filename for path in repo.compare(payload['before'], payload['after']).files],
                 'commit_message': payload['head_commit']['message'],
                 'base_ref': payload['ref'],
-                'actor_account_ids': payload['sender']['id'],
-                'pr_actions': payload['action']
+                'actor_account_ids': payload['sender']['id']
             }
 
+        log.debug(f'Payload Target Values:\n{payload_mapping}')
         valid = False
         for group in filter_groups:
             valid_count = 0
@@ -141,7 +141,7 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
                 target = [payload_mapping[filter_entry['type']]] if isinstance(payload_mapping[filter_entry['type']], str) else payload_mapping[filter_entry['type']]
                 for value in target:
                     log.debug(f'Target value:\n{value}')
-                    if (re.search(filter_entry['pattern'], value) and not filter_entry['exclude_matched_filter']) or (re.search(filter_entry['pattern'], value) and filter_entry['exclude_matched_filter']):
+                    if (re.search(filter_entry['pattern'], value) and not filter_entry['exclude_matched_filter']) or (not re.search(filter_entry['pattern'], value) and filter_entry['exclude_matched_filter']):
                         log.debug('Matched')
                         valid_count += 1
                         #only one value out of the target needs to be matched for `file_path` filtering
@@ -159,11 +159,7 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
     if valid:
         log.info('Payload fulfills atleast one filter group')
     else:
-        raise ClientException(
-            {
-                'message': 'Payload does not fulfill trigger requirements'
-            }
-        )
+        raise ClientException('Payload does not fulfill trigger requirements')
 
 class ClientException(Exception):
     """Wraps around client-related errors"""
