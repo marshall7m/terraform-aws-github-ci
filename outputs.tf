@@ -57,10 +57,10 @@ output "api_changes_sha" {
 
 output "agw_log_group_arn" {
   description = "ARN of the CloudWatch log group associated with the API gateway"
-  value       = try(aws_cloudwatch_log_group.agw[0].arn, null)
+  value       = aws_cloudwatch_log_group.agw.arn
 }
 
 output "agw_log_group_name" {
   description = "Name of the CloudWatch log group associated with the API gateway"
-  value       = try(aws_cloudwatch_log_group.agw[0].name, null)
+  value       = aws_cloudwatch_log_group.agw.name
 }
