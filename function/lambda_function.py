@@ -2,7 +2,6 @@ import json
 import hmac
 import hashlib
 import logging
-from multiprocessing.connection import Client
 import boto3
 from github import Github
 import os
