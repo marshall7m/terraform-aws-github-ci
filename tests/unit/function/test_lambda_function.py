@@ -103,7 +103,7 @@ def test_invalid_sig(mock_ssm, header_sig, payload, github_secret, expected_msg)
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'file_paths',
+                    'type': 'file_path',
                     'pattern': '.+\\.py',
                     'exclude_matched_filter': False
                 },
@@ -118,7 +118,7 @@ def test_invalid_sig(mock_ssm, header_sig, payload, github_secret, expected_msg)
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'actor_account_ids',
+                    'type': 'actor_account_id',
                     'pattern': '.+',
                     'exclude_matched_filter': False
                 }
@@ -146,7 +146,7 @@ def test_invalid_sig(mock_ssm, header_sig, payload, github_secret, expected_msg)
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'file_paths',
+                    'type': 'file_path',
                     'pattern': '.+\\.py',
                     'exclude_matched_filter': False
                 }
@@ -163,7 +163,7 @@ def test_invalid_sig(mock_ssm, header_sig, payload, github_secret, expected_msg)
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'actor_account_ids',
+                    'type': 'actor_account_id',
                     'pattern': '.+',
                     'exclude_matched_filter': False
                 }
@@ -191,7 +191,7 @@ def test_invalid_sig(mock_ssm, header_sig, payload, github_secret, expected_msg)
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'file_paths',
+                    'type': 'file_path',
                     'pattern': '.+\\.sh',
                     'exclude_matched_filter': False
                 }
@@ -208,7 +208,7 @@ def test_invalid_sig(mock_ssm, header_sig, payload, github_secret, expected_msg)
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'actor_account_ids',
+                    'type': 'actor_account_id',
                     'pattern': '.+',
                     'exclude_matched_filter': False
                 }
@@ -236,7 +236,7 @@ def test_invalid_sig(mock_ssm, header_sig, payload, github_secret, expected_msg)
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'file_paths',
+                    'type': 'file_path',
                     'pattern': '.+\\.py',
                     'exclude_matched_filter': False
                 },
@@ -256,7 +256,7 @@ def test_invalid_sig(mock_ssm, header_sig, payload, github_secret, expected_msg)
                     'exclude_matched_filter': True
                 },
                 {
-                    'type': 'actor_account_ids',
+                    'type': 'actor_account_id',
                     'pattern': '.+',
                     'exclude_matched_filter': False
                 }
@@ -272,7 +272,9 @@ def test_matched_filter_group(mock_repo, event, payload, modified_file_paths, pr
     #needed only with PR events since PR commit message is looked up via repo.get_commit() since it's not in payload
     mock_repo.return_value.get_commit.return_value.commit.message = pr_commit_message
 
-    lambda_function.validate_payload(event, payload, filter_groups)
+    response = lambda_function.validate_payload(event, payload, filter_groups)
+
+    assert response['message'] == 'Payload fulfills atleast one filter group'
 
 @patch('github.Github.get_repo')
 @pytest.mark.parametrize('event,payload,modified_file_paths,pr_commit_message,filter_groups', [
@@ -328,7 +330,7 @@ def test_matched_filter_group(mock_repo, event, payload, modified_file_paths, pr
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'file_paths',
+                    'type': 'file_path',
                     'pattern': '.+\\.py',
                     'exclude_matched_filter': False
                 },
@@ -343,7 +345,7 @@ def test_matched_filter_group(mock_repo, event, payload, modified_file_paths, pr
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'actor_account_ids',
+                    'type': 'actor_account_id',
                     'pattern': '.+',
                     'exclude_matched_filter': False
                 }
@@ -371,7 +373,7 @@ def test_matched_filter_group(mock_repo, event, payload, modified_file_paths, pr
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'file_paths',
+                    'type': 'file_path',
                     'pattern': '.+\\.py',
                     'exclude_matched_filter': True
                 },
@@ -386,7 +388,7 @@ def test_matched_filter_group(mock_repo, event, payload, modified_file_paths, pr
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'actor_account_ids',
+                    'type': 'actor_account_id',
                     'pattern': '.+',
                     'exclude_matched_filter': False
                 }
@@ -414,7 +416,7 @@ def test_matched_filter_group(mock_repo, event, payload, modified_file_paths, pr
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'file_paths',
+                    'type': 'file_path',
                     'pattern': '.+\\.py',
                     'exclude_matched_filter': False
                 }
@@ -431,7 +433,7 @@ def test_matched_filter_group(mock_repo, event, payload, modified_file_paths, pr
                     'exclude_matched_filter': False
                 },
                 {
-                    'type': 'actor_account_ids',
+                    'type': 'actor_account_id',
                     'pattern': '.+',
                     'exclude_matched_filter': False
                 }
@@ -447,12 +449,12 @@ def test_no_matched_filter_group(mock_repo, event, payload, modified_file_paths,
     #needed only with PR events since PR commit message is looked up via repo.get_commit() since it's not in payload
     mock_repo.return_value.get_commit.return_value.commit.message = pr_commit_message
 
-    with pytest.raises(lambda_function.ClientException) as exc_info:
-        lambda_function.validate_payload(event, payload, filter_groups)
+    response = lambda_function.validate_payload(event, payload, filter_groups)
 
-    assert exc_info.value.args[0] == 'Payload does not fulfill trigger requirements'
+    assert response['message'] == 'Payload does not fulfill trigger requirements'
+
 @patch('function.lambda_function.validate_sig', return_value=None)
-@patch('function.lambda_function.validate_payload', return_value=None)
+@patch('function.lambda_function.validate_payload', return_value='success')
 @patch('json.load', return_value=defaultdict(dict))
 @patch('json.loads', return_value=defaultdict(lambda: defaultdict(lambda: '')))
 @patch('builtins.open', new_callable=mock_open, read_data='mock_open')
@@ -461,7 +463,7 @@ def test_successful_lambda_handler(mock_open_file, mock_json_load, mock_json_loa
     event = defaultdict(lambda: defaultdict(dict))
     response = lambda_function.lambda_handler(event, {})
 
-    assert response == {"message": "Request was successful"}
+    assert response == mock_validate_payload()
 
 @patch('json.load', return_value='mock-filter-groups')
 @patch('builtins.open', new_callable=mock_open, read_data='mock_open')
