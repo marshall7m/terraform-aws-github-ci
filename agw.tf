@@ -16,6 +16,15 @@ resource "aws_api_gateway_stage" "this" {
   deployment_id = aws_api_gateway_deployment.this.id
   rest_api_id   = local.api_id
   stage_name    = var.stage_name
+  depends_on = [
+    aws_cloudwatch_log_group.agw
+  ]
+}
+
+resource "aws_cloudwatch_log_group" "agw" {
+  count       = var.create_api ? 1 : 0
+  name              = "API-Gateway-Execution-Logs_${local.api_id}/${var.stage_name}"
+  retention_in_days = 3
 }
 
 resource "aws_api_gateway_resource" "this" {
@@ -170,6 +179,16 @@ resource "aws_api_gateway_integration_response" "status_200" {
   depends_on = [
     aws_api_gateway_method_response.status_200
   ]
+}
+
+resource "aws_api_gateway_method_settings" "this" {
+  rest_api_id = local.api_id
+  stage_name  = aws_api_gateway_stage.this.stage_name
+  method_path = "${aws_api_gateway_resource.this.path_part}/${aws_api_gateway_method.this.http_method}"
+
+  settings {
+    logging_level   = "ERROR"
+  }
 }
 
 resource "aws_api_gateway_deployment" "this" {

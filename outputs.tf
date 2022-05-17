@@ -25,9 +25,14 @@ output "function_name" {
   value       = module.lambda.function_name
 }
 
-output "cw_log_group_arn" {
+output "lambda_log_group_arn" {
   description = "ARN of the CloudWatch log group associated with the Lambda function"
   value       = one([module.lambda.cw_log_group_arn])
+}
+
+output "lambda_log_group_name" {
+  description = "Name of the CloudWatch log group associated with the Lambda function"
+  value       = one([module.lambda.cw_log_group_name])
 }
 
 output "lambda_deps" {
@@ -48,4 +53,14 @@ output "deployment_invoke_url" {
 output "api_changes_sha" {
   description = "SHA value of file that contains API-related configurations. Can be used as a trigger for API deployments (see AWS resource: aws_api_gateway_deployment)"
   value       = filesha1("${path.module}/agw.tf")
+}
+
+output "agw_log_group_arn" {
+  description = "ARN of the CloudWatch log group associated with the API gateway"
+  value       = try(aws_cloudwatch_log_group.agw[0].arn, null)
+}
+
+output "agw_log_group_name" {
+  description = "Name of the CloudWatch log group associated with the API gateway"
+  value       = try(aws_cloudwatch_log_group.agw[0].name, null)
 }
