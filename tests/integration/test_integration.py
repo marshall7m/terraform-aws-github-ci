@@ -1,4 +1,5 @@
 import pytest
+from pprint import pformat
 import requests
 import json
 import os
@@ -18,7 +19,7 @@ log.addHandler(stream)
 log.setLevel(logging.DEBUG)
 
 os.environ['AWS_DEFAULT_REGION'] = os.environ['AWS_REGION']
-
+tf_dirs = [f'{os.path.dirname(__file__)}/fixtures']
 def pytest_generate_tests(metafunc):
     
     if 'terraform_version' in metafunc.fixturenames:
@@ -26,7 +27,7 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize('terraform_version', tf_versions, indirect=True, scope='session', ids=[f'tf_{v.values[0]}' for v in tf_versions])
 
     if 'tf' in metafunc.fixturenames:
-        metafunc.parametrize('tf', ['/src/tests/integration/fixtures'], indirect=True, scope='session')
+        metafunc.parametrize('tf', tf_dirs, indirect=True, scope='session')
 @pytest.fixture
 def function_start_time():
     '''Returns timestamp of when the function testing started'''
@@ -186,10 +187,7 @@ def test_invalid_sha_sig(tf, tf_apply, tf_output, sig, expected_err_msg, dummy_r
 def test_matched_push_event(tf, function_start_time, tf_apply, tf_output, dummy_repo):
     '''
     Creates a GitHub push event that meets atleast one of the filter groups' requirements and ensures that the 
-    Lambda Function's associated Cloudwatch logs doesn't contain any error events.
-
-    Note: Using AWS Cloudwatch logs instead of GitHub webhook delivery history to validate Lambda Function results 
-    given future test cases where Lambda Function is invoked asynchronously and the Lambda return value is not sent back to GitHub.
+    associated API response is valid.
     '''
     log.info('Runnning Terraform apply')
     tf_apply(update=True, repos=[
@@ -217,10 +215,7 @@ def test_matched_push_event(tf, function_start_time, tf_apply, tf_output, dummy_
 def test_unmatched_push_event(tf, function_start_time, tf_apply, tf_output, dummy_repo):
     '''
     Creates a GitHub push event that doesn't meet any of the filter groups' requirements and ensures that the 
-    Lambda Function's associated Cloudwatch logs contains the expected error response.
-
-    Note: Using AWS Cloudwatch logs instead of GitHub webhook delivery history to validate Lambda Function results 
-    given future test cases where Lambda Function is invoked asynchronously and the Lambda return value is not sent back to GitHub.
+    associated API response is valid.
     '''
     log.info('Runnning Terraform apply')
     tf_apply(update=True, repos=[
@@ -246,16 +241,13 @@ def test_unmatched_push_event(tf, function_start_time, tf_apply, tf_output, dumm
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
     
     results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload does not fulfill trigger requirements"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.now().timestamp() * 1000))
-    log.debug(f'Cloudwatch Events:\n{results}')
+    log.debug(f'Cloudwatch Events:\n{pformat(results)}')
     assert len(results) >= 0
 
 def test_matched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_repo):
     '''
     Creates a GitHub pull request event that meets atleast one of the filter groups' requirements and ensures that the 
-    Lambda Function's associated Cloudwatch logs doesn't contain any error events.
-
-    Note: Using AWS Cloudwatch logs instead of GitHub webhook delivery history to validate Lambda Function results 
-    given future test cases where Lambda Function is invoked asynchronously and the Lambda return value is not sent back to GitHub.
+    associated API response is valid.
     '''
     log.info('Runnning Terraform apply')
     tf_apply(update=True, repos=[
@@ -288,10 +280,7 @@ def test_matched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_re
 def test_unmatched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_repo):
     '''
     Creates a GitHub pull request event that doesn't meet any of the filter groups' requirements and ensures that the 
-    Lambda Function's associated Cloudwatch logs contains the expected error response.
-
-    Note: Using AWS Cloudwatch logs instead of GitHub webhook delivery history to validate Lambda Function results 
-    given future test cases where Lambda Function is invoked asynchronously and the Lambda return value is not sent back to GitHub.
+    associated API response is valid.
     '''
     log.info('Runnning Terraform apply')
     tf_apply(update=True, repos=[
@@ -317,10 +306,14 @@ def test_unmatched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
     results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload does not fulfill trigger requirements"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.now().timestamp() * 1000))
-    log.debug(f'Cloudwatch Events:\n{results}')
+    log.debug(f'Cloudwatch Events:\n{pformat(results)}')
     assert len(results) >= 1
 
 def test_unsupported_gh_label_event(tf, function_start_time, tf_apply, tf_output, dummy_repo):
+    '''
+    Creates a GitHub pull request event that doesn't meet any of the filter groups' requirements and ensures that the 
+    associated API response is valid.
+    '''
     log.info('Runnning Terraform apply')
     tf_apply(update=True, repos=[
         {
@@ -342,5 +335,5 @@ def test_unsupported_gh_label_event(tf, function_start_time, tf_apply, tf_output
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
     results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Github event is not supported"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.now().timestamp() * 1000))
-    log.debug(f'Cloudwatch Events:\n{results}')
+    log.debug(f'Cloudwatch Events:\n{pformat(results)}')
     assert len(results) >= 1
