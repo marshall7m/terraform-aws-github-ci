@@ -22,7 +22,6 @@ resource "aws_api_gateway_stage" "this" {
 }
 
 resource "aws_cloudwatch_log_group" "agw" {
-  count       = var.create_api ? 1 : 0
   name              = "API-Gateway-Execution-Logs_${local.api_id}/${var.stage_name}"
   retention_in_days = 3
 }
