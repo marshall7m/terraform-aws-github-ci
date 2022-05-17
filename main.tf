@@ -51,6 +51,7 @@ module "lambda" {
     "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
     aws_iam_policy.lambda.arn
   ]
+  force_detach_policies = true
   lambda_layers = [
     {
       filename         = data.archive_file.lambda_deps.output_path

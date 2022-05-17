@@ -24,7 +24,7 @@ variable "execution_arn" {
 variable "api_name" {
   description = "Name of API-Gateway to be created"
   type        = string
-  default     = null
+  default     = "github-webhook"
 }
 
 variable "api_description" {
@@ -56,15 +56,15 @@ Params:
       {
         `type`: The type of filter
           (
-            `event` - List of Github Webhook events that will invoke the API. Currently only supports: `push` and `pull_request`.
-            `pr_actions` - List of pull request actions (e.g. opened, edited, reopened, closed). See more under the action key at: https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#pull_request
-            `base_refs` - List of base refs
-            `head_refs` - List of head refs
-            `actor_account_ids` - List of Github user IDs
-            `commit_messages` - List of commit messages
-            `file_paths` - List of file paths
+            `event` - Github Webhook events that will invoke the API. Currently only supports: `push` and `pull_request`.
+            `pr_action` - Pull request actions (e.g. opened, edited, reopened, closed). See more under the action key at: https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#pull_request
+            `base_ref` - Pull request base ref
+            `head_ref` - Pull request head ref
+            `actor_account_id` - Github user IDs
+            `commit_message` - GitHub event's commit message
+            `file_path` - File paths of new, modified, or deleted files
           )
-        `pattern`: Regex pattern that is searched for within the related event attribute. For `type` = `event`, use a single Github webhook event and not a regex pattern.
+        `pattern`: Regex pattern that is searched for within the related event's payload attributes. For `type` = `event`, use a single Github webhook event and not a regex pattern.
         `exclude_matched_filter` - If set to true, labels filter group as invalid if it is matched
       }
     ]
@@ -72,11 +72,11 @@ Params:
   EOF
   type = list(object({
     name = string
-    filter_groups = optional(list(list(object({
+    filter_groups = list(list(object({
       type                   = string
       pattern                = string
       exclude_matched_filter = optional(bool)
-    }))))
+    })))
   }))
   default = []
 }
