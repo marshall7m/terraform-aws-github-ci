@@ -2,6 +2,7 @@ import json
 import hmac
 import hashlib
 import logging
+from multiprocessing.connection import Client
 import boto3
 from github import Github
 import os
@@ -44,21 +45,25 @@ def lambda_handler(event, context):
 
     payload = json.loads(event['body'])
     event_header = event['headers']['X-GitHub-Event']
-    repo_name = payload['repository']['name']
-    
+
+    try:
+        repo_name = payload['repository']['name']
+    except KeyError:
+        raise ClientException('Repository name could not be found in payload')
+
     with open('/opt/filter_groups.json') as f:
         filter_groups = json.load(f)[repo_name]
-    
+
     log.info(f'Triggered Repo: {repo_name}')
     log.info(f'GitHub Event: {event_header}')
     log.info(f'Filter Groups: {filter_groups}')
     
     if filter_groups is None:
-        log.info(f'Filter groups were not defined for repo: {repo_name}')
+        raise ClientException(f'Filter groups were not defined for repo: {repo_name}')
     else:
         try:
             log.info('Validating payload')
-            validate_payload(event_header, payload, filter_groups)
+            response = validate_payload(event_header, payload, filter_groups)
         except Exception as e:
             logging.error(e, exc_info=True)
             api_exception_json = json.dumps(
@@ -70,7 +75,7 @@ def lambda_handler(event, context):
             )
             raise LambdaException(api_exception_json)
 
-    return {"message": "Request was successful"}
+    return response
 
 def validate_sig(header_sig: str, payload: str) -> None:
     """
@@ -110,35 +115,40 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
     :param filter_groups: List of filters to check payload with
     """
     
-    try:
-        gh = Github()
-        repo = gh.get_repo(payload['repository']['full_name'])
-        if event == 'pull_request':
-            payload_mapping = {
-                'event': event,
-                'file_paths': [path.filename for path in repo.compare(payload['pull_request']['base']['sha'], payload['pull_request']['head']['sha']).files],
-                'commit_message': repo.get_commit(sha=payload['pull_request']['head']['sha']).commit.message,
-                'base_ref': payload['pull_request']['base']['ref'],
-                'head_ref': payload['pull_request']['head']['ref'],
-                'actor_account_ids': payload['sender']['id'],
-                'pr_actions': payload['action']
-            }
-        elif event == 'push':
-            payload_mapping = {
-                'event': event,
-                'file_paths': [path.filename for path in repo.compare(payload['before'], payload['after']).files],
-                'commit_message': payload['head_commit']['message'],
-                'base_ref': payload['ref'],
-                'actor_account_ids': payload['sender']['id']
-            }
+    gh = Github()
+    repo = gh.get_repo(payload['repository']['full_name'])
+    
+    if event == 'pull_request':
+        payload_mapping = {
+            'event': event,
+            'file_path': [path.filename for path in repo.compare(payload['pull_request']['base']['sha'], payload['pull_request']['head']['sha']).files],
+            'commit_message': repo.get_commit(sha=payload['pull_request']['head']['sha']).commit.message,
+            'base_ref': payload['pull_request']['base']['ref'],
+            'head_ref': payload['pull_request']['head']['ref'],
+            'actor_account_id': payload['sender']['id'],
+            'pr_action': payload['action']
+        }
+    elif event == 'push':
+        payload_mapping = {
+            'event': event,
+            'file_path': [path.filename for path in repo.compare(payload['before'], payload['after']).files],
+            'commit_message': payload['head_commit']['message'],
+            'base_ref': payload['ref'],
+            'actor_account_id': payload['sender']['id']
+        }
+    else:
+        raise ClientException(f'Github event is not supported: {event}')
 
-        log.debug(f'Payload Target Values:\n{payload_mapping}')
-        valid = False
+    log.debug(f'Payload Target Values:\n{payload_mapping}')
+    valid = False
+
+    try:
         for group in filter_groups:
             valid_count = 0
             for filter_entry in group:
                 log.debug(f'Filter: {filter_entry}')
-                target = [payload_mapping[filter_entry['type']]] if isinstance(payload_mapping[filter_entry['type']], str) else payload_mapping[filter_entry['type']]
+                # puts payload value into a list if value is not already a list so they can be processed with list payload values
+                target = [payload_mapping[filter_entry['type']]] if not isinstance(payload_mapping[filter_entry['type']], list) else payload_mapping[filter_entry['type']]
                 for value in target:
                     log.debug(f'Target value:\n{value}')
                     if (re.search(filter_entry['pattern'], value) and not filter_entry['exclude_matched_filter']) or (not re.search(filter_entry['pattern'], value) and filter_entry['exclude_matched_filter']):
@@ -157,9 +167,9 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
         raise ServerException("Internal server error")
 
     if valid:
-        log.info('Payload fulfills atleast one filter group')
+        return {'message': 'Payload fulfills atleast one filter group'}
     else:
-        raise ClientException('Payload does not fulfill trigger requirements')
+        return {'message': 'Payload does not fulfill trigger requirements'}
 
 class ClientException(Exception):
     """Wraps around client-related errors"""
