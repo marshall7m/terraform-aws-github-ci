@@ -186,7 +186,7 @@ resource "aws_api_gateway_method_settings" "this" {
   method_path = "${aws_api_gateway_resource.this.path_part}/${aws_api_gateway_method.this.http_method}"
 
   settings {
-    logging_level   = "ERROR"
+    logging_level = "ERROR"
   }
 }
 

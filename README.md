@@ -47,14 +47,14 @@
 | agw\_log\_group\_name | Name of the CloudWatch log group associated with the API gateway |
 | api\_changes\_sha | SHA value of file that contains API-related configurations. Can be used as a trigger for API deployments (see AWS resource: aws\_api\_gateway\_deployment) |
 | api\_stage\_name | API stage name |
-| deployment\_invoke\_url | API stage's associated deployment URL |
-| function\_arn | ARN of AWS Lambda function used to validate Github webhook request |
-| function\_name | Name of the Lambda function used to validate Github webhook request |
+| deployment\_invoke\_url | API stage's URL |
+| function\_arn | ARN of AWS Lambda Function used to validate Github webhook request |
+| function\_name | Name of the Lambda Function used to validate Github webhook request |
 | github\_webhook\_invoke\_url | API URL the github webhook will ping |
-| lambda\_deps | Package depedency's file configurations for the Lambda function |
-| lambda\_log\_group\_arn | ARN of the CloudWatch log group associated with the Lambda function |
-| lambda\_log\_group\_name | Name of the CloudWatch log group associated with the Lambda function |
-| webhook\_ids | Map of repo webhook URLs |
+| lambda\_deps | Package depedency's file configurations for the Lambda Function |
+| lambda\_log\_group\_arn | ARN of the CloudWatch log group associated with the Lambda Function |
+| lambda\_log\_group\_name | Name of the CloudWatch log group associated with the Lambda Function |
+| webhook\_ids | Map of repo webhook IDs |
 | webhook\_urls | Map of repo webhook URLs |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

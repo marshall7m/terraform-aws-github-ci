@@ -1,5 +1,5 @@
 module "mut_github_webhook_request_validator" {
-  source = "../../../../..//"
+  source     = "../../../../..//"
   create_api = true
   repos = [
     {
@@ -7,7 +7,7 @@ module "mut_github_webhook_request_validator" {
       filter_groups = [
         [
           {
-            type = "event"
+            type    = "event"
             pattern = "push"
           }
         ]

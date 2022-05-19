@@ -1,5 +1,5 @@
 output "invoke_url" {
-    value = module.mut_github_webhook_request_validator.github_webhook_invoke_url
+  value = module.mut_github_webhook_request_validator.github_webhook_invoke_url
 }
 
 output "lambda_log_group_name" {
