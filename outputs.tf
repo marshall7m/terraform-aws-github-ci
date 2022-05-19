@@ -10,33 +10,33 @@ output "webhook_urls" {
 }
 
 output "webhook_ids" {
-  description = "Map of repo webhook URLs"
+  description = "Map of repo webhook IDs"
   value       = { for repo in github_repository_webhook.this : repo.repository => element(split("/", repo.url), length(split("/", repo.url)) - 1) }
   sensitive   = true
 }
 
 output "function_arn" {
-  description = "ARN of AWS Lambda function used to validate Github webhook request"
+  description = "ARN of AWS Lambda Function used to validate Github webhook request"
   value       = module.lambda.function_arn
 }
 
 output "function_name" {
-  description = "Name of the Lambda function used to validate Github webhook request"
+  description = "Name of the Lambda Function used to validate Github webhook request"
   value       = module.lambda.function_name
 }
 
 output "lambda_log_group_arn" {
-  description = "ARN of the CloudWatch log group associated with the Lambda function"
+  description = "ARN of the CloudWatch log group associated with the Lambda Function"
   value       = one([module.lambda.cw_log_group_arn])
 }
 
 output "lambda_log_group_name" {
-  description = "Name of the CloudWatch log group associated with the Lambda function"
+  description = "Name of the CloudWatch log group associated with the Lambda Function"
   value       = one([module.lambda.cw_log_group_name])
 }
 
 output "lambda_deps" {
-  description = "Package depedency's file configurations for the Lambda function"
+  description = "Package depedency's file configurations for the Lambda Function"
   value       = data.archive_file.lambda_deps
 }
 
@@ -46,7 +46,7 @@ output "api_stage_name" {
 }
 
 output "deployment_invoke_url" {
-  description = "API stage's associated deployment URL"
+  description = "API stage's URL"
   value       = try(aws_api_gateway_deployment.this.invoke_url, null)
 }
 
