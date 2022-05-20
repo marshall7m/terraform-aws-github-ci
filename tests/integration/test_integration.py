@@ -84,7 +84,7 @@ def push(repo_name, branch, files, commit_message='test'):
         files: Dictionary keys containing file paths relative to the repository's root directory and values containing the content within the file path
         commit_message: Commit message used for commit
     '''
-    repo = github.Github(os.environ['TESTING_GITHUB_TOKEN']).get_user().get_repo(repo_name)
+    repo = github.Github(os.environ['TF_VAR_testing_github_token']).get_user().get_repo(repo_name)
     elements = []
     head_ref = repo.get_git_ref('heads/' + branch)
     for filepath, content in files.items():
@@ -112,7 +112,7 @@ def pr(repo_name, base, head, files, commit_message='test', title='Test PR', bod
         body: Body content of the PR
         commit_message: Commit message used for push commit
     '''
-    repo = github.Github(os.environ['TESTING_GITHUB_TOKEN']).get_user().get_repo(repo_name)
+    repo = github.Github(os.environ['TF_VAR_testing_github_token']).get_user().get_repo(repo_name)
 
     base_commit = repo.get_branch(base)
     log.info(f'Creating Branch: {head}')
@@ -129,7 +129,7 @@ def pr(repo_name, base, head, files, commit_message='test', title='Test PR', bod
 @pytest.fixture
 def repo():
     test_repos = []
-    gh = github.Github(os.environ['TESTING_GITHUB_TOKEN']).get_user()
+    gh = github.Github(os.environ['TF_VAR_testing_github_token']).get_user()
     def _get_or_create(name):
 
         try:
@@ -150,7 +150,7 @@ def repo():
 @pytest.fixture(scope='module')
 def dummy_repo():
     '''Creates a dummy repo for testing'''
-    gh = github.Github(os.environ['TESTING_GITHUB_TOKEN']).get_user()
+    gh = github.Github(os.environ['TF_VAR_testing_github_token']).get_user()
     name = f'mut-terraform-aws-github-webhook-{uuid.uuid4()}'
     log.info(f'Creating repo: {name}')
     repo = gh.create_repo(name, auto_init=True)

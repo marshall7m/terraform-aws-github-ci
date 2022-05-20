@@ -1,3 +1,10 @@
+variable "testing_github_token" {
+  description = "GitHub token to create GitHub webhook for repos defined in var.repos (permission: )"
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
 variable "repos" {
   description = <<EOF
 List of named repos to create github webhooks for and their respective filter groups
