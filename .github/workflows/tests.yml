@@ -32,9 +32,6 @@ jobs:
       id-token: write
       contents: read
     container: ghcr.io/marshall7m/terrace:v0.1.0
-    credentials:
-      username: ${{ github.actor }}
-      password: ${{ secrets.github_token }}
     steps:
       - uses: actions/checkout@v3
       - name: Hooks
@@ -49,9 +46,6 @@ jobs:
       id-token: write
       contents: read
     container: ghcr.io/marshall7m/terrace:v0.1.0
-    credentials:
-      username: ${{ github.actor }}
-      password: ${{ secrets.github_token }}
     steps:
       - uses: actions/checkout@v3
       - name: mask sensitive
@@ -86,9 +80,6 @@ jobs:
       id-token: write
       contents: read
     container: ghcr.io/marshall7m/terrace:v0.1.0
-    credentials:
-      username: ${{ github.actor }}
-      password: ${{ secrets.github_token }}
     steps:
       - uses: actions/checkout@v3
       - name: mask sensitive
