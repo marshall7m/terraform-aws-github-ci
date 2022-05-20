@@ -204,7 +204,7 @@ def test_matched_push_event(tf, function_start_time, tf_apply, tf_output, dummy_
         }
     ])
             
-    push(dummy_repo.name, 'master', {str(uuid.uuid4()) + '.py': 'dummy'})
+    push(dummy_repo.name, dummy_repo.default_branch, {str(uuid.uuid4()) + '.py': 'dummy'})
     tf_output = tf.output()
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
@@ -236,7 +236,7 @@ def test_unmatched_push_event(tf, function_start_time, tf_apply, tf_output, dumm
         }
     ])
 
-    push(dummy_repo.name, 'master', {str(uuid.uuid4()) + '.py': 'dummy'})
+    push(dummy_repo.name, dummy_repo.default_branch, {str(uuid.uuid4()) + '.py': 'dummy'})
     tf_output = tf.output()
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
     
@@ -268,7 +268,7 @@ def test_matched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_re
         }
     ])
 
-    pr(dummy_repo.name, 'master', f'feature-{uuid.uuid4()}', {str(uuid.uuid4()) + '.py': 'dummy'}, title=f'test_matched_pr_event-{uuid.uuid4()}')
+    pr(dummy_repo.name, dummy_repo.default_branch, f'feature-{uuid.uuid4()}', {str(uuid.uuid4()) + '.py': 'dummy'}, title=f'test_matched_pr_event-{uuid.uuid4()}')
     tf_output = tf.output()
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
@@ -301,7 +301,7 @@ def test_unmatched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_
         }
     ])
 
-    pr(dummy_repo.name, 'master', f'feature-{uuid.uuid4()}', {str(uuid.uuid4()) + '.py': 'dummy'}, title=f'test_unmatched_pr_event-{uuid.uuid4()}')
+    pr(dummy_repo.name, dummy_repo.default_branch, f'feature-{uuid.uuid4()}', {str(uuid.uuid4()) + '.py': 'dummy'}, title=f'test_unmatched_pr_event-{uuid.uuid4()}')
     tf_output = tf.output()
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
