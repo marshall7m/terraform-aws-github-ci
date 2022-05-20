@@ -22,9 +22,9 @@ on:
     - README.md
 
 env:
-  PYTEST_ADDOPTS: "--color=yes"
-  PYTHON_VERSION: "pypy-3.9"
-  AWS_REGION: "us-west-2"
+  PYTEST_ADDOPTS: --color=yes
+  PYTHON_VERSION: pypy-3.9
+  AWS_REGION: us-west-2
   TESTING_GITHUB_TOKEN: "{{ secrets.TESTING_GITHUB_TOKEN }}"
 
 jobs:
