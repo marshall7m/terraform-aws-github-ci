@@ -7,7 +7,19 @@ on:
       - master
     tags:
       - ci
-      - tests
+      - tests  
+    paths-ignore:
+    - .gitignore
+    - LICENSE.md
+    - README.md
+
+  push:
+    branches:
+    - master
+    paths-ignore:
+    - .gitignore
+    - LICENSE.md
+    - README.md
 
 env:
   PYTEST_ADDOPTS: "--color=yes"
@@ -15,7 +27,24 @@ env:
   TESTING_GITHUB_TOKEN: "{{ secrets.TESTING_GITHUB_TOKEN }}"
 
 jobs:
+  precommit:
+    permissions:
+      id-token: write
+      contents: read
+    container: ghcr.io/marshall7m/terrace:v0.1.0
+    credentials:
+      username: ${{ github.actor }}
+      password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Hooks
+        shell: bash
+        run: |
+          pre-commit install
+          pre-commit run --all-files
+
   unit:
+    needs: precommit
     permissions:
       id-token: write
       contents: read
@@ -52,6 +81,7 @@ jobs:
           pytest -vv tests/unit
 
   integration:
+    needs: [precommit, unit]
     permissions:
       id-token: write
       contents: read
