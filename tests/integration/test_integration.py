@@ -8,7 +8,7 @@ import sys
 import github
 import boto3
 import uuid
-from datetime import datetime
+import datetime
 import time
 
 from tests.integration.utils import wait_for_lambda_invocation
@@ -31,7 +31,7 @@ def pytest_generate_tests(metafunc):
 @pytest.fixture
 def function_start_time():
     '''Returns timestamp of when the function testing started'''
-    start_time = datetime.now()
+    start_time = datetime.datetime.now(datetime.timezone.utc)
     return start_time
 
 def get_latest_log_stream_events(log_group: str, start_time=None, end_time=None, stream_limit=2, filter_pattern=" ") -> list:
@@ -179,8 +179,6 @@ def test_invalid_sha_sig(tf, tf_apply, tf_output, sig, expected_err_msg, dummy_r
     response = requests.post(tf_output['invoke_url'], json={'body': {}}, headers=headers).json()
     log.debug(f'Response:\n{response}')
 
-    # err = json.loads(response['errorMessage'])
-
     assert response['type'] == 'ClientException'
     assert response['message'] == expected_err_msg
 
@@ -203,12 +201,11 @@ def test_matched_push_event(tf, function_start_time, tf_apply, tf_output, dummy_
             ]
         }
     ])
-            
     push(dummy_repo.name, dummy_repo.default_branch, {str(uuid.uuid4()) + '.py': 'dummy'})
     tf_output = tf.output()
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
-    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload fulfills atleast one filter group"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.now().timestamp() * 1000))
+    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload fulfills atleast one filter group"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
 
     assert len(results) >= 0
 
@@ -240,7 +237,7 @@ def test_unmatched_push_event(tf, function_start_time, tf_apply, tf_output, dumm
     tf_output = tf.output()
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
     
-    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload does not fulfill trigger requirements"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.now().timestamp() * 1000))
+    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload does not fulfill trigger requirements"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
     log.debug(f'Cloudwatch Events:\n{pformat(results)}')
     assert len(results) >= 0
 
@@ -273,7 +270,7 @@ def test_matched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_re
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
     tf_output = tf.output()
-    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload fulfills atleast one filter group"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.now().timestamp() * 1000))
+    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload fulfills atleast one filter group"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
 
     assert len(results) >= 1
 
@@ -305,7 +302,7 @@ def test_unmatched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_
     tf_output = tf.output()
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
-    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload does not fulfill trigger requirements"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.now().timestamp() * 1000))
+    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload does not fulfill trigger requirements"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
     log.debug(f'Cloudwatch Events:\n{pformat(results)}')
     assert len(results) >= 1
 
@@ -334,6 +331,6 @@ def test_unsupported_gh_label_event(tf, function_start_time, tf_apply, tf_output
     tf_output = tf.output()
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
-    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Github event is not supported"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.now().timestamp() * 1000))
+    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Github event is not supported"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
     log.debug(f'Cloudwatch Events:\n{pformat(results)}')
     assert len(results) >= 1

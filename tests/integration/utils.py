@@ -1,5 +1,5 @@
 import boto3
-from datetime import datetime
+import datetime
 import logging
 import time
 
@@ -19,7 +19,7 @@ def lambda_invocation_count(function_name, start_time, end_time=None):
     '''
     invocations = []
     if not end_time:
-        end_time = datetime.now()
+        end_time = datetime.datetime.now(datetime.timezone.utc)
 
     log.debug(f'Start Time: {start_time} -- End Time: {end_time}')
 
