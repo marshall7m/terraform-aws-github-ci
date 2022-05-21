@@ -26,6 +26,7 @@ env:
   PYTHON_VERSION: pypy-3.9
   AWS_REGION: us-west-2
   TF_VAR_testing_github_token: ${{ secrets.TESTING_GITHUB_TOKEN }}
+
 jobs:
   precommit:
     runs-on: ubuntu-latest
@@ -53,10 +54,20 @@ jobs:
       - name: mask sensitive
         run: echo "::add-mask::$TF_VAR_testing_github_token"
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials for remote workflow
         uses: aws-actions/configure-aws-credentials@v1
+        if: ${{ !env.ACT }}
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS Credentials for local workflow
+        uses: aws-actions/configure-aws-credentials@v1
+        if: ${{ env.ACT }}
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - uses: actions/setup-python@v3
@@ -85,10 +96,20 @@ jobs:
       - name: mask sensitive
         run: echo "::add-mask::$TF_VAR_testing_github_token"
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials for remote workflow
         uses: aws-actions/configure-aws-credentials@v1
+        if: ${{ !env.ACT }}
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS Credentials for local workflow
+        uses: aws-actions/configure-aws-credentials@v1
+        if: ${{ env.ACT }}
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - uses: actions/setup-python@v3
