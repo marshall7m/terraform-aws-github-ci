@@ -15,13 +15,12 @@ resource "aws_api_gateway_rest_api" "this" {
 resource "aws_api_gateway_stage" "this" {
   deployment_id = aws_api_gateway_deployment.this.id
   rest_api_id   = local.api_id
-  stage_name    = var.stage_name
-  depends_on = [
-    aws_cloudwatch_log_group.agw
-  ]
+  #implicit way of creating a conditional depends_on without having to create a separate api stage resource
+  stage_name = try(basename(aws_cloudwatch_log_group.agw[0].name), var.stage_name)
 }
 
 resource "aws_cloudwatch_log_group" "agw" {
+  count             = var.enable_api_cw_logs ? 1 : 0
   name              = "API-Gateway-Execution-Logs_${local.api_id}/${var.stage_name}"
   retention_in_days = 3
 }
@@ -181,12 +180,16 @@ resource "aws_api_gateway_integration_response" "status_200" {
 }
 
 resource "aws_api_gateway_method_settings" "this" {
+  count       = var.enable_api_cw_logs ? 1 : 0
   rest_api_id = local.api_id
   stage_name  = aws_api_gateway_stage.this.stage_name
   method_path = "${aws_api_gateway_resource.this.path_part}/${aws_api_gateway_method.this.http_method}"
 
   settings {
-    logging_level = "ERROR"
+    logging_level          = "ERROR"
+    data_trace_enabled     = true
+    throttling_rate_limit  = 30
+    throttling_burst_limit = 10
   }
 }
 

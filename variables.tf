@@ -33,6 +33,12 @@ variable "api_description" {
   default     = "API used for custom GitHub webhooks"
 }
 
+variable "enable_api_cw_logs" {
+  description = "Determines API execution logs should be stored within a Cloudwatch log group"
+  type        = bool
+  default     = true
+}
+
 variable "stage_name" {
   description = "Stage name for the API deployment"
   type        = string

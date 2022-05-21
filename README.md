@@ -28,6 +28,7 @@
 | async\_lambda\_invocation | Determines if the backend Lambda function for the API Gateway is invoked asynchronously.<br>If true, the API Gateway REST API method will not return the Lambda results to the client.<br>See for more info: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-integration-async.html | `bool` | `false` | no |
 | create\_api | Determines if Terraform module just create the AWS REST API | `bool` | n/a | yes |
 | deployment\_triggers | Arbitrary mapping that when changed causes a redeployment of the API | `map(string)` | `{}` | no |
+| enable\_api\_cw\_logs | Determines API execution logs should be stored within a Cloudwatch log group | `bool` | `true` | no |
 | execution\_arn | Pre-existing AWS API execution ARN that will be allowed to invoke the Lambda function | `string` | `null` | no |
 | function\_name | Name of Lambda function | `string` | `"github-webhook-request-validator"` | no |
 | github\_secret\_ssm\_description | Github secret SSM parameter description | `string` | `"Secret value for Github Webhooks"` | no |
@@ -62,3 +63,9 @@
 ## Features
 
 - Move Lambda webhook validator from Lambda integration to Lambda Authorizer once/if Lambda Authorizers can receive request `method.request.body`. This will open up the Lambda integration for user defined services. See issue: https://stackoverflow.com/questions/47400447/access-post-request-body-from-custom-authorizer-lambda-function
+
+## Tests
+
+## Requirements
+
+- AWS account must have a pre-existing IAM role that allows AWS AGW to write logs to Cloudwatch log groups. See details here: https://aws.amazon.com/premiumsupport/knowledge-center/api-gateway-cloudwatch-logs/
