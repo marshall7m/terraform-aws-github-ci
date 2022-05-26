@@ -2,6 +2,7 @@ import boto3
 import datetime
 import logging
 import time
+import github
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
