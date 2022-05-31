@@ -40,3 +40,21 @@ Params:
   }))
   default = []
 }
+
+variable "github_token_ssm_value" {
+  description = <<EOF
+  Registered Github webhook token associated with the Github provider. 
+  If not provided, module looks for pre-existing SSM parameter via `github_token_ssm_key`.
+  Token needs full `repo` permissions until github creates a repo scoped token with 
+  granular permissions. See thread here: https://github.community/t/can-i-give-read-only-access-to-a-private-repo-from-a-developer-account/441/165
+  NOTE: The token is only needed for private repositories
+  EOF
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "includes_private_repo" {
+  description = "Determines if an AWS System Manager Parameter Store value is needed by the Lambda Function to access private repos"
+  type        = bool
+}

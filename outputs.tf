@@ -64,3 +64,8 @@ output "agw_log_group_name" {
   description = "Name of the CloudWatch log group associated with the API gateway"
   value       = try(aws_cloudwatch_log_group.agw[0].name, null)
 }
+
+output "github_token_ssm_arn" {
+  description = "ARN of the AWS System Manager Parameter Store key used for the sensitive GitHub Token"
+  value       = try(aws_ssm_parameter.github_token[0].arn, data.aws_ssm_parameter.github_token[0].arn, null)
+}

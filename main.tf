@@ -44,9 +44,9 @@ module "lambda" {
     }
   ]
   enable_cw_logs = true
-  env_vars = {
+  env_vars = merge({
     GITHUB_WEBHOOK_SECRET_SSM_KEY = var.github_secret_ssm_key
-  }
+  }, var.includes_private_repo ? { GITHUB_TOKEN_SSM_KEY = var.github_token_ssm_key } : {})
   custom_role_policy_arns = [
     "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
     aws_iam_policy.lambda.arn
@@ -124,6 +124,18 @@ data "aws_iam_policy_document" "lambda" {
   }
 
   dynamic "statement" {
+    for_each = var.includes_private_repo ? [1] : []
+    content {
+      sid    = "GithubWebhookTokenReadAccess"
+      effect = "Allow"
+      actions = [
+        "ssm:GetParameter"
+      ]
+      resources = [try(aws_ssm_parameter.github_token[0].arn, data.aws_ssm_parameter.github_token[0].arn)]
+    }
+  }
+
+  dynamic "statement" {
     for_each = contains(try(data.aws_arn.lambda_dest[*].service, []), "sqs") ? [1] : []
     content {
       sid    = "InvokeSqsDestination"
@@ -192,6 +204,20 @@ resource "github_repository_webhook" "this" {
   #pulls distinct filter group events
   events = distinct(flatten([for group in each.value.filter_groups : [for filter in group :
   filter.pattern if filter.type == "event" && filter.exclude_matched_filter != true]]))
+}
+
+resource "aws_ssm_parameter" "github_token" {
+  count       = var.includes_private_repo && var.github_token_ssm_value != "" ? 1 : 0
+  name        = var.github_token_ssm_key
+  description = var.github_token_ssm_description
+  type        = "SecureString"
+  value       = var.github_token_ssm_value
+  tags        = var.github_token_ssm_tags
+}
+
+data "aws_ssm_parameter" "github_token" {
+  count = var.includes_private_repo && var.github_token_ssm_value == "" ? 1 : 0
+  name  = var.github_token_ssm_key
 }
 
 resource "aws_ssm_parameter" "github_secret" {
