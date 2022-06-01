@@ -6,7 +6,8 @@ locals {
       })
     ]
   })]
-  lambda_destination_arns = concat(var.lambda_success_destination_arns, var.lambda_failure_destination_arns)
+  lambda_destination_arns  = concat(var.lambda_success_destination_arns, var.lambda_failure_destination_arns)
+  lambda_deps_requirements = "PyGithub==1.54.1"
 }
 
 resource "aws_lambda_function_event_invoke_config" "lambda" {
@@ -67,13 +68,19 @@ module "lambda" {
 # pip install runtime packages needed for function
 resource "null_resource" "lambda_pip_deps" {
   triggers = {
-    zip_hash = fileexists("${path.module}/lambda_deps.zip") ? 0 : timestamp()
+    zip_hash = base64sha256(local.lambda_deps_requirements)
   }
   provisioner "local-exec" {
     command = <<EOF
-    pip install --upgrade --target ${path.module}/deps/python PyGithub==1.54.1
+    pip install --upgrade --target ${path.module}/deps/python ${local.lambda_deps_requirements}
     EOF
   }
+}
+
+#using lambda layer file for filter groups given lambda functions have a size limit of 4KB for env vars and easier parsing
+resource "local_file" "filter_groups" {
+  content  = jsonencode({ for repo in local.repos : repo.name => repo.filter_groups })
+  filename = "${path.module}/deps/filter_groups.json"
 }
 
 data "archive_file" "lambda_deps" {
@@ -90,12 +97,6 @@ data "archive_file" "lambda_function" {
   type        = "zip"
   source_dir  = "${path.module}/function"
   output_path = "${path.module}/function.zip"
-}
-
-#using lambda layer file for filter groups given lambda functions have a size limit of 4KB for env vars and easier parsing
-resource "local_file" "filter_groups" {
-  content  = jsonencode({ for repo in local.repos : repo.name => repo.filter_groups })
-  filename = "${path.module}/deps/filter_groups.json"
 }
 
 data "aws_arn" "lambda_dest" {
