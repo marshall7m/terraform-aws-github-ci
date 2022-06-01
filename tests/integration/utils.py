@@ -3,6 +3,8 @@ import datetime
 import logging
 import time
 import github
+import os
+import requests
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -37,7 +39,7 @@ def lambda_invocation_count(function_name, start_time, end_time=None):
         ],
         StartTime=start_time, 
         EndTime=end_time,
-        Period=60,
+        Period=5,
         Statistics=[
             'SampleCount'
         ],
@@ -48,18 +50,41 @@ def lambda_invocation_count(function_name, start_time, end_time=None):
         
     return len(invocations)
 
-def wait_for_lambda_invocation(function_name, start_time, timeout=60):
+def wait_for_lambda_invocation(function_name, start_time, expected_count=1, timeout=60):
     '''Waits for Lambda's completed invocation count to be more than the current invocation count stored'''
-    start_count = 0
-    timeout = time.time() + timeout
-    refresh_count = lambda_invocation_count(function_name, start_time)
 
-    while start_count == refresh_count:
+    timeout = time.time() + timeout
+    actual_count = lambda_invocation_count(function_name, start_time)
+    log.debug(f'Refreshed Count: {actual_count}')
+
+    log.debug(f'Waiting on Lambda Function: {function_name}')
+    log.debug(f'Expected count: {expected_count}')
+    while actual_count < expected_count:
         if time.time() > timeout:
             raise TimeoutError(f'{function_name} was not invoked')
         time.sleep(5)
-        refresh_count = lambda_invocation_count(function_name, start_time)
-        log.debug(f'Refresh Count: {refresh_count}')
+        actual_count = lambda_invocation_count(function_name, start_time)
+        log.debug(f'Refreshed Count: {actual_count}')
+
+
+def wait_for_target_github_event_invocation(lambda_log_group_arn, function_start_time):
+    '''
+    If the Terraform module creates a webhook, the webhook automatically sends a ping event to the endpoint after creation.
+    This results in a race condition where the get_latest_log_stream_events() may only have the ping event and not
+    target event. This function waits till get_latest_log_stream_events() finds two invocations of the function via
+    the `END RequestId: ` log statement
+    '''
+
+    ping_events_count = len(get_latest_log_stream_events(lambda_log_group_arn, filter_pattern='"GitHub Event: ping"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)))
+    if ping_events_count >= 1:
+        log.debug(f'Ping event count: {ping_events_count}')
+        log.info("Module created a new Github Webhook -- waiting for targeted Github event's Lambda invocation to finish")
+        invocation_count = len(get_latest_log_stream_events(lambda_log_group_arn, filter_pattern='"END RequestId: "', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)))
+        log.debug(f'Invocation Count: {invocation_count}')
+        while invocation_count < 2:
+            time.sleep(3)
+            invocation_count = len(get_latest_log_stream_events(lambda_log_group_arn, filter_pattern='"END RequestId: "', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)))
+            log.debug(f'Invocation Count: {invocation_count}')
 
 def get_latest_log_stream_events(log_group: str, start_time=None, end_time=None, stream_limit=2, filter_pattern=" ") -> list:
         '''
@@ -125,6 +150,7 @@ def push(repo_name, branch, files, commit_message='test'):
     parent = repo.get_git_commit(sha=head_sha)
     commit_id = repo.create_git_commit(commit_message, tree, [parent]).sha
     head_ref.edit(sha=commit_id)
+    return commit_id
 
 def pr(repo_name, base, head, files, commit_message='test', title='Test PR', body='test'):
     '''
@@ -153,3 +179,27 @@ def pr(repo_name, base, head, files, commit_message='test', title='Test PR', bod
     pr = repo.create_pull(title=title, body=body, base=base, head=head)
     log.debug(f'PR #{pr.number}')
     log.debug(f'PR commits: {pr.commits}')
+
+    return pr
+
+
+def get_wh_response(event, url, exclude_ids=[]):
+
+    deliveries = requests.get(
+        f'{url}/deliveries', 
+        headers={
+            "Accept": "application/vnd.github.v3+json",
+            "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
+        }
+    ).json()
+
+    filter_attr = {"event": event}
+    ids = [delivery["id"] for delivery in deliveries if set(filter_attr.items()).issubset( set(delivery.items()) ) and delivery["id"] not in exclude_ids]
+
+    return [requests.get(
+        f'{url}/deliveries/{id}',
+        headers={
+            "Accept": "application/vnd.github.v3+json",
+            "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
+        }
+    ).json()['response'] for id in ids]
