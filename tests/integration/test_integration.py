@@ -18,6 +18,7 @@ stream = logging.StreamHandler(sys.stdout)
 log.addHandler(stream)
 log.setLevel(logging.DEBUG)
 
+
 os.environ['AWS_DEFAULT_REGION'] = os.environ['AWS_REGION']
 tf_dirs = [f'{os.path.dirname(__file__)}/fixtures']
 def pytest_generate_tests(metafunc):
@@ -29,23 +30,25 @@ def pytest_generate_tests(metafunc):
     if 'tf' in metafunc.fixturenames:
         metafunc.parametrize('tf', tf_dirs, indirect=True, scope='session')
 
+
 @pytest.fixture
 def function_start_time():
     '''Returns timestamp of when the function testing started'''
     start_time = datetime.datetime.now(datetime.timezone.utc)
     return start_time
 
+
 @pytest.fixture
 def repo():
     test_repos = []
     gh = github.Github(os.environ['TF_VAR_testing_github_token']).get_user()
-    def _get_or_create(name):
+    def _get_or_create(name, private=False):
 
         try:
             repo = gh.get_repo(name)
         except github.UnknownObjectException:
             log.info(f'Creating repo: {name}')
-            repo = gh.create_repo(name, auto_init=True)
+            repo = gh.create_repo(name, auto_init=True, private=private)
         return repo
     yield _get_or_create
 
@@ -56,30 +59,39 @@ def repo():
         except github.UnknownObjectException:
             log.info('GitHub repo does not exist')
 
-@pytest.fixture(scope='module')
-def dummy_repo():
+dummy_repo_params = [(False, 'public'), (True, 'private')]
+@pytest.fixture(scope='module', params=dummy_repo_params, ids=[r[1] for r in dummy_repo_params],)
+def dummy_repo(tf, request):
     '''Creates a dummy repo for testing'''
     gh = github.Github(os.environ['TF_VAR_testing_github_token']).get_user()
-    name = f'mut-terraform-aws-github-webhook-{uuid.uuid4()}'
+    name = f'{request.param[1]}-mut-terraform-aws-github-webhook-{uuid.uuid4()}'
     log.info(f'Creating repo: {name}')
-    repo = gh.create_repo(name, auto_init=True)
+    repo = gh.create_repo(name, auto_init=True, private=request.param[0])
+
+    tf.env.update({"TF_VAR_includes_private_repo": str(request.param[0]).lower()})
     yield repo
     
     log.info(f'Deleting dummy repo: {name}')
     repo.delete()
+
 
 @pytest.mark.parametrize('sig,expected_err_msg', [
     pytest.param('sha256=123', 'Header signature and expected signature do not match', id='sha256_signed'),
     pytest.param('sha=123', 'Signature not signed with sha256 (e.g. sha256=123456)', id='sha_signed'),
     pytest.param('123', 'Signature not signed with sha256 (e.g. sha256=123456)', id='not_signed')
 ])
-def test_invalid_sha_sig(tf, tf_apply, tf_output, sig, expected_err_msg, dummy_repo):
+def test_invalid_sha_sig(tf, sig, expected_err_msg, dummy_repo):
     '''Sends request to the AGW API invoke URL with an invalid signature to the Lambda Function and delivers the right response back to the client.'''
+    
+    tf_vars = {'repos': [{'name': dummy_repo.name, 'filter_groups': [[{'type': 'event', 'pattern': 'push'}]]}]}
+    with open(f'{tf.tfdir}/terraform.tfvars.json', 'w', encoding='utf-8') as f:
+        json.dump(tf_vars, f, ensure_ascii=False, indent=4)
+
     log.info('Runnning Terraform apply')
-    tf_apply(update=True, repos=[{'name': dummy_repo.name, 'filter_groups': [[{'type': 'event', 'pattern': 'push'}]]}])
+    tf.apply(auto_approve=True)
 
     headers = {
-        'content-type': 'application/json', 
+        'content-type': 'application/json',
         'X-Hub-Signature-256': sig, 
         'X-GitHub-Event': 'push'
     }
@@ -91,40 +103,37 @@ def test_invalid_sha_sig(tf, tf_apply, tf_output, sig, expected_err_msg, dummy_r
     assert response['type'] == 'ClientException'
     assert response['message'] == expected_err_msg
 
-def test_matched_push_event(tf, function_start_time, tf_apply, tf_output, dummy_repo):
+
+def test_matched_push_event(tf, function_start_time, dummy_repo):
     '''
     Creates a GitHub push event that meets atleast one of the filter groups' requirements and ensures that the 
     associated API response is valid.
     '''
+    tf_vars = {'repos': [{'name': dummy_repo.name, 'filter_groups': [[{'type': 'event', 'pattern': 'push'}]]}]}
+    with open(f'{tf.tfdir}/terraform.tfvars.json', 'w', encoding='utf-8') as f:
+        json.dump(tf_vars, f, ensure_ascii=False, indent=4)
+
     log.info('Runnning Terraform apply')
-    tf_apply(update=True, repos=[
-        {
-            'name': dummy_repo.name, 
-            'filter_groups': [
-                [
-                    {
-                        'type': 'event',
-                        'pattern': 'push'
-                    }
-                ]
-            ]
-        }
-    ])
+    tf.apply(auto_approve=True)
+
+    log.info('Pushing to repo')
     push(dummy_repo.name, dummy_repo.default_branch, {str(uuid.uuid4()) + '.py': 'dummy'})
+
     tf_output = tf.output()
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
     results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload fulfills atleast one filter group"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
 
-    assert len(results) >= 0
+    assert len(results) >= 1
 
-def test_unmatched_push_event(tf, function_start_time, tf_apply, tf_output, dummy_repo):
+
+def test_unmatched_push_event(tf, function_start_time, dummy_repo):
     '''
     Creates a GitHub push event that doesn't meet any of the filter groups' requirements and ensures that the 
     associated API response is valid.
     '''
-    log.info('Runnning Terraform apply')
-    tf_apply(update=True, repos=[
+
+    tf_vars = {'repos': [[
         {
             'name': dummy_repo.name, 
             'filter_groups': [
@@ -140,7 +149,12 @@ def test_unmatched_push_event(tf, function_start_time, tf_apply, tf_output, dumm
                 ]
             ]
         }
-    ])
+    ]]}
+    with open(f'{tf.tfdir}/terraform.tfvars.json', 'w', encoding='utf-8') as f:
+        json.dump(tf_vars, f, ensure_ascii=False, indent=4)
+
+    log.info('Runnning Terraform apply')
+    tf.apply(auto_approve=True)
 
     push(dummy_repo.name, dummy_repo.default_branch, {str(uuid.uuid4()) + '.py': 'dummy'})
     tf_output = tf.output()
@@ -148,15 +162,14 @@ def test_unmatched_push_event(tf, function_start_time, tf_apply, tf_output, dumm
     
     results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload does not fulfill trigger requirements"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
     log.debug(f'Cloudwatch Events:\n{pformat(results)}')
-    assert len(results) >= 0
+    assert len(results) >= 1
 
-def test_matched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_repo):
+def test_matched_pr_event(tf, function_start_time, dummy_repo):
     '''
     Creates a GitHub pull request event that meets atleast one of the filter groups' requirements and ensures that the 
     associated API response is valid.
     '''
-    log.info('Runnning Terraform apply')
-    tf_apply(update=True, repos=[
+    tf_vars = {'repos': [[
         {
             'name': dummy_repo.name, 
             'filter_groups': [
@@ -172,7 +185,12 @@ def test_matched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_re
                 ]
             ]
         }
-    ])
+    ]]}
+    with open(f'{tf.tfdir}/terraform.tfvars.json', 'w', encoding='utf-8') as f:
+        json.dump(tf_vars, f, ensure_ascii=False, indent=4)
+
+    log.info('Runnning Terraform apply')
+    tf.apply(auto_approve=True)
 
     pr(dummy_repo.name, dummy_repo.default_branch, f'feature-{uuid.uuid4()}', {str(uuid.uuid4()) + '.py': 'dummy'}, title=f'test_matched_pr_event-{uuid.uuid4()}')
     tf_output = tf.output()
@@ -183,13 +201,12 @@ def test_matched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_re
 
     assert len(results) >= 1
 
-def test_unmatched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_repo):
+def test_unmatched_pr_event(tf, function_start_time, dummy_repo):
     '''
     Creates a GitHub pull request event that doesn't meet any of the filter groups' requirements and ensures that the 
     associated API response is valid.
     '''
-    log.info('Runnning Terraform apply')
-    tf_apply(update=True, repos=[
+    tf_vars = {'repos': [[
         {
             'name': dummy_repo.name, 
             'filter_groups': [
@@ -205,7 +222,12 @@ def test_unmatched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_
                 ]
             ]
         }
-    ])
+    ]]}
+    with open(f'{tf.tfdir}/terraform.tfvars.json', 'w', encoding='utf-8') as f:
+        json.dump(tf_vars, f, ensure_ascii=False, indent=4)
+
+    log.info('Runnning Terraform apply')
+    tf.apply(auto_approve=True)
 
     pr(dummy_repo.name, dummy_repo.default_branch, f'feature-{uuid.uuid4()}', {str(uuid.uuid4()) + '.py': 'dummy'}, title=f'test_unmatched_pr_event-{uuid.uuid4()}')
     tf_output = tf.output()
@@ -215,13 +237,12 @@ def test_unmatched_pr_event(tf, function_start_time, tf_apply, tf_output, dummy_
     log.debug(f'Cloudwatch Events:\n{pformat(results)}')
     assert len(results) >= 1
 
-def test_unsupported_gh_label_event(tf, function_start_time, tf_apply, tf_output, dummy_repo):
+def test_unsupported_gh_label_event(tf, function_start_time, dummy_repo):
     '''
     Creates a GitHub pull request event that doesn't meet any of the filter groups' requirements and ensures that the 
     associated API response is valid.
     '''
-    log.info('Runnning Terraform apply')
-    tf_apply(update=True, repos=[
+    tf_vars = {'repos': [[
         {
             'name': dummy_repo.name, 
             'filter_groups': [
@@ -233,7 +254,12 @@ def test_unsupported_gh_label_event(tf, function_start_time, tf_apply, tf_output
                 ]
             ]
         }
-    ])
+    ]]}
+    with open(f'{tf.tfdir}/terraform.tfvars.json', 'w', encoding='utf-8') as f:
+        json.dump(tf_vars, f, ensure_ascii=False, indent=4)
+
+    log.info('Runnning Terraform apply')
+    tf.apply(auto_approve=True)
 
     dummy_repo.create_label('test', 'B60205')
 
