@@ -10,14 +10,14 @@ import boto3
 import uuid
 import datetime
 import time
+import re
 
-from tests.integration.utils import wait_for_lambda_invocation, pr, push, get_latest_log_stream_events
+from tests.integration.utils import wait_for_lambda_invocation, pr, push, get_latest_log_stream_events, get_wh_response
 
 log = logging.getLogger(__name__)
 stream = logging.StreamHandler(sys.stdout)
 log.addHandler(stream)
 log.setLevel(logging.DEBUG)
-
 
 os.environ['AWS_DEFAULT_REGION'] = os.environ['AWS_REGION']
 tf_dirs = [f'{os.path.dirname(__file__)}/fixtures']
@@ -103,7 +103,6 @@ def test_invalid_sha_sig(tf, sig, expected_err_msg, dummy_repo):
     assert response['type'] == 'ClientException'
     assert response['message'] == expected_err_msg
 
-
 def test_matched_push_event(tf, function_start_time, dummy_repo):
     '''
     Creates a GitHub push event that meets atleast one of the filter groups' requirements and ensures that the 
@@ -114,17 +113,28 @@ def test_matched_push_event(tf, function_start_time, dummy_repo):
         json.dump(tf_vars, f, ensure_ascii=False, indent=4)
 
     log.info('Runnning Terraform apply')
-    tf.apply(auto_approve=True)
+    log.debug(tf.apply(auto_approve=True))
+    tf_output = tf.output()
+
+    wh_ids = [
+        delivery["id"] for delivery in 
+        requests.get(
+            f'{tf_output["webhook_urls"][dummy_repo.name]}/deliveries',
+            headers={
+                "Accept": "application/vnd.github.v3+json",
+                "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
+            }
+        ).json()
+    ]
 
     log.info('Pushing to repo')
     push(dummy_repo.name, dummy_repo.default_branch, {str(uuid.uuid4()) + '.py': 'dummy'})
-
-    tf_output = tf.output()
+    
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
-    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload fulfills atleast one filter group"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
-
-    assert len(results) >= 1
+    response = get_wh_response("push", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
+    
+    assert json.loads(response['payload']) == {"message": "Payload fulfills atleast one filter group"}
 
 
 def test_unmatched_push_event(tf, function_start_time, dummy_repo):
@@ -133,7 +143,7 @@ def test_unmatched_push_event(tf, function_start_time, dummy_repo):
     associated API response is valid.
     '''
 
-    tf_vars = {'repos': [[
+    tf_vars = {'repos': [
         {
             'name': dummy_repo.name, 
             'filter_groups': [
@@ -149,27 +159,40 @@ def test_unmatched_push_event(tf, function_start_time, dummy_repo):
                 ]
             ]
         }
-    ]]}
+    ]}
     with open(f'{tf.tfdir}/terraform.tfvars.json', 'w', encoding='utf-8') as f:
         json.dump(tf_vars, f, ensure_ascii=False, indent=4)
 
     log.info('Runnning Terraform apply')
     tf.apply(auto_approve=True)
-
-    push(dummy_repo.name, dummy_repo.default_branch, {str(uuid.uuid4()) + '.py': 'dummy'})
     tf_output = tf.output()
-    wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
+
+    wh_ids = [
+        delivery["id"] for delivery in 
+        requests.get(
+            f'{tf_output["webhook_urls"][dummy_repo.name]}/deliveries',
+            headers={
+                "Accept": "application/vnd.github.v3+json",
+                "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
+            }
+        ).json()
+    ]
+
+    log.info('Pushing to repo')
+    push(dummy_repo.name, dummy_repo.default_branch, {str(uuid.uuid4()) + '.py': 'dummy'})
     
-    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload does not fulfill trigger requirements"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
-    log.debug(f'Cloudwatch Events:\n{pformat(results)}')
-    assert len(results) >= 1
+    wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
+
+    response = get_wh_response("push", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
+    
+    assert json.loads(response['payload']) == {"message": "Payload does not fulfill trigger requirements"}
 
 def test_matched_pr_event(tf, function_start_time, dummy_repo):
     '''
     Creates a GitHub pull request event that meets atleast one of the filter groups' requirements and ensures that the 
     associated API response is valid.
     '''
-    tf_vars = {'repos': [[
+    tf_vars = {'repos': [
         {
             'name': dummy_repo.name, 
             'filter_groups': [
@@ -185,28 +208,41 @@ def test_matched_pr_event(tf, function_start_time, dummy_repo):
                 ]
             ]
         }
-    ]]}
+    ]}
     with open(f'{tf.tfdir}/terraform.tfvars.json', 'w', encoding='utf-8') as f:
         json.dump(tf_vars, f, ensure_ascii=False, indent=4)
 
     log.info('Runnning Terraform apply')
     tf.apply(auto_approve=True)
-
-    pr(dummy_repo.name, dummy_repo.default_branch, f'feature-{uuid.uuid4()}', {str(uuid.uuid4()) + '.py': 'dummy'}, title=f'test_matched_pr_event-{uuid.uuid4()}')
     tf_output = tf.output()
+
+    wh_ids = [
+        delivery["id"] for delivery in 
+        requests.get(
+            f'{tf_output["webhook_urls"][dummy_repo.name]}/deliveries',
+            headers={
+                "Accept": "application/vnd.github.v3+json",
+                "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
+            }
+        ).json()
+    ]
+
+    log.info('Creating PR')
+    pr(dummy_repo.name, dummy_repo.default_branch, f'feature-{uuid.uuid4()}', {str(uuid.uuid4()) + '.py': 'dummy'}, title=f'test_matched_pr_event-{uuid.uuid4()}')
+    
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
-    tf_output = tf.output()
-    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload fulfills atleast one filter group"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
-
-    assert len(results) >= 1
+    response = get_wh_response("pull_request", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
+    
+    assert json.loads(response['payload']) == {"message": "Payload fulfills atleast one filter group"}
+    
 
 def test_unmatched_pr_event(tf, function_start_time, dummy_repo):
     '''
     Creates a GitHub pull request event that doesn't meet any of the filter groups' requirements and ensures that the 
     associated API response is valid.
     '''
-    tf_vars = {'repos': [[
+    tf_vars = {'repos': [
         {
             'name': dummy_repo.name, 
             'filter_groups': [
@@ -222,27 +258,40 @@ def test_unmatched_pr_event(tf, function_start_time, dummy_repo):
                 ]
             ]
         }
-    ]]}
+    ]}
     with open(f'{tf.tfdir}/terraform.tfvars.json', 'w', encoding='utf-8') as f:
         json.dump(tf_vars, f, ensure_ascii=False, indent=4)
 
     log.info('Runnning Terraform apply')
     tf.apply(auto_approve=True)
-
-    pr(dummy_repo.name, dummy_repo.default_branch, f'feature-{uuid.uuid4()}', {str(uuid.uuid4()) + '.py': 'dummy'}, title=f'test_unmatched_pr_event-{uuid.uuid4()}')
     tf_output = tf.output()
+
+    wh_ids = [
+        delivery["id"] for delivery in 
+        requests.get(
+            f'{tf_output["webhook_urls"][dummy_repo.name]}/deliveries',
+            headers={
+                "Accept": "application/vnd.github.v3+json",
+                "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
+            }
+        ).json()
+    ]
+
+    log.info('Creating PR')
+    pr(dummy_repo.name, dummy_repo.default_branch, f'feature-{uuid.uuid4()}', {str(uuid.uuid4()) + '.py': 'dummy'}, title=f'test_matched_pr_event-{uuid.uuid4()}')
+    
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
-    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Payload does not fulfill trigger requirements"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
-    log.debug(f'Cloudwatch Events:\n{pformat(results)}')
-    assert len(results) >= 1
+    response = get_wh_response("pull_request", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
+    
+    assert json.loads(response['payload']) == {"message": "Payload does not fulfill trigger requirements"}
 
 def test_unsupported_gh_label_event(tf, function_start_time, dummy_repo):
     '''
     Creates a GitHub pull request event that doesn't meet any of the filter groups' requirements and ensures that the 
     associated API response is valid.
     '''
-    tf_vars = {'repos': [[
+    tf_vars = {'repos': [
         {
             'name': dummy_repo.name, 
             'filter_groups': [
@@ -254,18 +303,31 @@ def test_unsupported_gh_label_event(tf, function_start_time, dummy_repo):
                 ]
             ]
         }
-    ]]}
+    ]}
     with open(f'{tf.tfdir}/terraform.tfvars.json', 'w', encoding='utf-8') as f:
         json.dump(tf_vars, f, ensure_ascii=False, indent=4)
 
     log.info('Runnning Terraform apply')
     tf.apply(auto_approve=True)
 
-    dummy_repo.create_label('test', 'B60205')
-
     tf_output = tf.output()
+
+    wh_ids = [
+        delivery["id"] for delivery in 
+        requests.get(
+            f'{tf_output["webhook_urls"][dummy_repo.name]}/deliveries',
+            headers={
+                "Accept": "application/vnd.github.v3+json",
+                "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
+            }
+        ).json()
+    ]
+
+    log.info('Creating label')
+    dummy_repo.create_label('test', 'B60205')    
+    
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
-    results = get_latest_log_stream_events(tf_output['agw_log_group_name'], filter_pattern='"Github event is not supported"', start_time=int(function_start_time.timestamp() * 1000), end_time=int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
-    log.debug(f'Cloudwatch Events:\n{pformat(results)}')
-    assert len(results) >= 1
+    response = get_wh_response("label", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
+    
+    assert json.loads(response['payload']) == {"message": "Payload does not fulfill trigger requirements"}
