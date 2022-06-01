@@ -45,19 +45,20 @@ def lambda_handler(event, context):
 
     payload = json.loads(event['body'])
     event_header = event['headers']['X-GitHub-Event']
+    log.info(f'GitHub Event: {event_header}')
 
     try:
         repo_name = payload['repository']['name']
     except KeyError:
         raise ClientException('Repository name could not be found in payload')
+    log.info(f'Triggered Repo: {repo_name}')
 
     with open('/opt/filter_groups.json') as f:
-        filter_groups = json.load(f)[repo_name]
-
-    log.info(f'Triggered Repo: {repo_name}')
-    log.info(f'GitHub Event: {event_header}')
+        all_repos_filter_groups = json.load(f)
+        log.debug(f'All repos filter groups:\n{all_repos_filter_groups}')
+        filter_groups = all_repos_filter_groups[repo_name]
     log.info(f'Filter Groups: {filter_groups}')
-    
+
     if filter_groups is None:
         raise ClientException(f'Filter groups were not defined for repo: {repo_name}')
     else:
