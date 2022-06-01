@@ -13,3 +13,9 @@ output "function_name" {
 output "agw_log_group_name" {
   value = try(module.mut_github_webhook_request_validator.agw_log_group_name, null)
 }
+
+output "webhook_urls" {
+  description = "Map of repo webhook URLs"
+  value       = module.mut_github_webhook_request_validator.webhook_urls
+  sensitive   = true
+}
