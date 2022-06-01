@@ -150,6 +150,8 @@ def push(repo_name, branch, files, commit_message='test'):
     parent = repo.get_git_commit(sha=head_sha)
     commit_id = repo.create_git_commit(commit_message, tree, [parent]).sha
     head_ref.edit(sha=commit_id)
+    log.debug(f'Commit ID: {commit_id}')
+    
     return commit_id
 
 def pr(repo_name, base, head, files, commit_message='test', title='Test PR', body='test'):

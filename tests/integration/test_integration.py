@@ -113,7 +113,7 @@ def test_matched_push_event(tf, function_start_time, dummy_repo):
         json.dump(tf_vars, f, ensure_ascii=False, indent=4)
 
     log.info('Runnning Terraform apply')
-    log.debug(tf.apply(auto_approve=True))
+    tf.apply(auto_approve=True)
     tf_output = tf.output()
 
     wh_ids = [
@@ -133,7 +133,7 @@ def test_matched_push_event(tf, function_start_time, dummy_repo):
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
     response = get_wh_response("push", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
-    
+
     assert json.loads(response['payload']) == {"message": "Payload fulfills atleast one filter group"}
 
 
@@ -184,7 +184,7 @@ def test_unmatched_push_event(tf, function_start_time, dummy_repo):
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
     response = get_wh_response("push", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
-    
+
     assert json.loads(response['payload']) == {"message": "Payload does not fulfill trigger requirements"}
 
 def test_matched_pr_event(tf, function_start_time, dummy_repo):
@@ -233,7 +233,7 @@ def test_matched_pr_event(tf, function_start_time, dummy_repo):
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
     response = get_wh_response("pull_request", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
-    
+
     assert json.loads(response['payload']) == {"message": "Payload fulfills atleast one filter group"}
     
 
@@ -283,7 +283,7 @@ def test_unmatched_pr_event(tf, function_start_time, dummy_repo):
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
     response = get_wh_response("pull_request", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
-    
+
     assert json.loads(response['payload']) == {"message": "Payload does not fulfill trigger requirements"}
 
 def test_unsupported_gh_label_event(tf, function_start_time, dummy_repo):
@@ -329,5 +329,5 @@ def test_unsupported_gh_label_event(tf, function_start_time, dummy_repo):
     wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
 
     response = get_wh_response("label", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
-    
-    assert json.loads(response['payload']) == {"message": "Payload does not fulfill trigger requirements"}
+
+    assert json.loads(response['payload']['message']) == {"message": "Github event is not supported: label"}
