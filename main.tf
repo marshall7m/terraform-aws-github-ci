@@ -7,6 +7,7 @@ locals {
     ]
   })]
   lambda_destination_arns  = concat(var.lambda_success_destination_arns, var.lambda_failure_destination_arns)
+  lambda_deps_zip_path     = "${path.module}/lambda_deps.zip"
   lambda_deps_requirements = "PyGithub==1.54.1"
 }
 
@@ -65,12 +66,16 @@ module "lambda" {
 }
 
 
-# pip install runtime packages needed for function
+
 resource "null_resource" "lambda_pip_deps" {
   triggers = {
-    zip_hash = base64sha256(local.lambda_deps_requirements)
+    requirements_hash = base64sha256(local.lambda_deps_requirements)
+    # use zip file hash as a trigger so the command is executed even when
+    # `terraform init -upgrade` removes the zip file on new installation of terraform module
+    zip_hash = fileexists(local.lambda_deps_zip_path) ? 0 : timestamp()
   }
   provisioner "local-exec" {
+    # pip install runtime packages needed for function
     command = <<EOF
     pip install --upgrade --target ${path.module}/deps/python ${local.lambda_deps_requirements}
     EOF
@@ -86,7 +91,7 @@ resource "local_file" "filter_groups" {
 data "archive_file" "lambda_deps" {
   type        = "zip"
   source_dir  = "${path.module}/deps"
-  output_path = "${path.module}/lambda_deps.zip"
+  output_path = local.lambda_deps_zip_path
   depends_on = [
     local_file.filter_groups,
     null_resource.lambda_pip_deps
