@@ -4,7 +4,11 @@ terraform {
   required_providers {
     github = {
       source  = "integrations/github"
-      version = "4.9.3"
+      version = ">=4.9.3"
+    }
+    random = {
+      source  = "integrations/github"
+      version = ">=3.3.1"
     }
   }
 }
