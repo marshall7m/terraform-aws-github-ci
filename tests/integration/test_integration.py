@@ -83,7 +83,7 @@ def dummy_repo(tf, request):
 def test_invalid_sha_sig(tf, sig, expected_err_msg, dummy_repo):
     '''Sends request to the AGW API invoke URL with an invalid signature to the Lambda Function and delivers the right response back to the client.'''
     
-    tf_vars = {'repos': [{'name': dummy_repo.name, 'filter_groups': [[{'type': 'event', 'pattern': 'push'}]]}]}
+    tf_vars = {'includes_private_repo': dummy_repo.private, 'repos': [{'name': dummy_repo.name, 'filter_groups': [[{'type': 'event', 'pattern': 'push'}]]}]}
     with open(f'{tf.tfdir}/terraform.tfvars.json', 'w', encoding='utf-8') as f:
         json.dump(tf_vars, f, ensure_ascii=False, indent=4)
 
@@ -108,7 +108,7 @@ def test_matched_push_event(tf, function_start_time, dummy_repo):
     Creates a GitHub push event that meets atleast one of the filter groups' requirements and ensures that the 
     associated API response is valid.
     '''
-    tf_vars = {'repos': [{'name': dummy_repo.name, 'filter_groups': [[{'type': 'event', 'pattern': 'push'}]]}]}
+    tf_vars = {'includes_private_repo': dummy_repo.private, 'repos': [{'name': dummy_repo.name, 'filter_groups': [[{'type': 'event', 'pattern': 'push'}]]}]}
     with open(f'{tf.tfdir}/terraform.tfvars.json', 'w', encoding='utf-8') as f:
         json.dump(tf_vars, f, ensure_ascii=False, indent=4)
 
@@ -143,7 +143,7 @@ def test_unmatched_push_event(tf, function_start_time, dummy_repo):
     associated API response is valid.
     '''
 
-    tf_vars = {'repos': [
+    tf_vars = {'includes_private_repo': dummy_repo.private, 'repos': [
         {
             'name': dummy_repo.name, 
             'filter_groups': [
@@ -192,7 +192,7 @@ def test_matched_pr_event(tf, function_start_time, dummy_repo):
     Creates a GitHub pull request event that meets atleast one of the filter groups' requirements and ensures that the 
     associated API response is valid.
     '''
-    tf_vars = {'repos': [
+    tf_vars = {'includes_private_repo': dummy_repo.private, 'repos': [
         {
             'name': dummy_repo.name, 
             'filter_groups': [
@@ -242,7 +242,7 @@ def test_unmatched_pr_event(tf, function_start_time, dummy_repo):
     Creates a GitHub pull request event that doesn't meet any of the filter groups' requirements and ensures that the 
     associated API response is valid.
     '''
-    tf_vars = {'repos': [
+    tf_vars = {'includes_private_repo': dummy_repo.private, 'repos': [
         {
             'name': dummy_repo.name, 
             'filter_groups': [
@@ -291,7 +291,7 @@ def test_unsupported_gh_label_event(tf, function_start_time, dummy_repo):
     Creates a GitHub pull request event that doesn't meet any of the filter groups' requirements and ensures that the 
     associated API response is valid.
     '''
-    tf_vars = {'repos': [
+    tf_vars = {'includes_private_repo': dummy_repo.private, 'repos': [
         {
             'name': dummy_repo.name, 
             'filter_groups': [
