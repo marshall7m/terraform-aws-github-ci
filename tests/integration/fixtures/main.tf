@@ -11,11 +11,14 @@ resource "random_string" "mut" {
 }
 
 module "mut_github_webhook_request_validator" {
-  source                 = "../../..//"
-  create_api             = true
-  repos                  = var.repos
-  includes_private_repo  = var.includes_private_repo
+  source                = "../../..//"
+  create_api            = true
+  repos                 = var.repos
+  includes_private_repo = var.includes_private_repo
+
+  github_secret_ssm_key  = "${local.function_name}-secret"
   github_token_ssm_value = var.github_token_ssm_value
   github_token_ssm_key   = "${local.function_name}-token"
-  function_name          = local.function_name
+
+  function_name = local.function_name
 }
