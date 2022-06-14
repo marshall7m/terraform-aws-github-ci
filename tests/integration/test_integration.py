@@ -123,7 +123,8 @@ def test_matched_push_event(tf, function_start_time, dummy_repo):
     
     log.info("Waiting on GitHub webhook to receive the response")
     response = wait_for_gh_wh_response(tf_output["webhook_urls"][dummy_repo.name], "push", wh_ids)
-
+    log.debug(f"Response:\n{pformat(response)}")
+    
     assert json.loads(response['payload']) == {"message": "Payload fulfills atleast one filter group"}
 
 
@@ -164,6 +165,7 @@ def test_unmatched_push_event(tf, function_start_time, dummy_repo):
     
     log.info("Waiting on GitHub webhook to receive the response")
     response = wait_for_gh_wh_response(tf_output["webhook_urls"][dummy_repo.name], "push", wh_ids)
+    log.debug(f"Response:\n{pformat(response)}")
 
     assert json.loads(response['payload']) == {"message": "Payload does not fulfill trigger requirements"}
 
@@ -203,6 +205,7 @@ def test_matched_pr_event(tf, function_start_time, dummy_repo):
     
     log.info("Waiting on GitHub webhook to receive the response")
     response = wait_for_gh_wh_response(tf_output["webhook_urls"][dummy_repo.name], "pull_request", wh_ids)
+    log.debug(f"Response:\n{pformat(response)}")
 
     assert json.loads(response['payload']) == {"message": "Payload fulfills atleast one filter group"}
     
@@ -243,7 +246,8 @@ def test_unmatched_pr_event(tf, function_start_time, dummy_repo):
     
     log.info("Waiting on GitHub webhook to receive the response")
     response = wait_for_gh_wh_response(tf_output["webhook_urls"][dummy_repo.name], "pull_request", wh_ids)
-
+    log.debug(f"Response:\n{pformat(response)}")
+    
     assert json.loads(response['payload']) == {"message": "Payload does not fulfill trigger requirements"}
 
 def test_unsupported_gh_label_event(tf, function_start_time, dummy_repo):
@@ -279,5 +283,6 @@ def test_unsupported_gh_label_event(tf, function_start_time, dummy_repo):
     
     log.info("Waiting on GitHub webhook to receive the response")
     response = wait_for_gh_wh_response(tf_output["webhook_urls"][dummy_repo.name], "label", wh_ids)
+    log.debug(f"Response:\n{pformat(response)}")
 
     assert json.loads(response['payload'])['message'] == "Github event is not supported: label"
