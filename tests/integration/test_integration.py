@@ -12,7 +12,7 @@ import datetime
 import time
 import re
 
-from tests.integration.utils import wait_for_lambda_invocation, pr, push, get_latest_log_stream_events, get_wh_response
+from tests.integration.utils import pr, push, get_latest_log_stream_events, wait_for_gh_wh_response, get_wh_ids
 
 log = logging.getLogger(__name__)
 stream = logging.StreamHandler(sys.stdout)
@@ -116,23 +116,13 @@ def test_matched_push_event(tf, function_start_time, dummy_repo):
     tf.apply(auto_approve=True)
     tf_output = tf.output()
 
-    wh_ids = [
-        delivery["id"] for delivery in 
-        requests.get(
-            f'{tf_output["webhook_urls"][dummy_repo.name]}/deliveries',
-            headers={
-                "Accept": "application/vnd.github.v3+json",
-                "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
-            }
-        ).json()
-    ]
+    wh_ids = get_wh_ids(tf_output["webhook_urls"][dummy_repo.name])
 
     log.info('Pushing to repo')
     push(dummy_repo.name, dummy_repo.default_branch, {str(uuid.uuid4()) + '.py': 'dummy'})
     
-    wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
-
-    response = get_wh_response("push", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
+    log.info("Waiting on GitHub webhook to receive the response")
+    response = wait_for_gh_wh_response(tf_output["webhook_urls"][dummy_repo.name], "push", wh_ids)
 
     assert json.loads(response['payload']) == {"message": "Payload fulfills atleast one filter group"}
 
@@ -167,23 +157,13 @@ def test_unmatched_push_event(tf, function_start_time, dummy_repo):
     tf.apply(auto_approve=True)
     tf_output = tf.output()
 
-    wh_ids = [
-        delivery["id"] for delivery in 
-        requests.get(
-            f'{tf_output["webhook_urls"][dummy_repo.name]}/deliveries',
-            headers={
-                "Accept": "application/vnd.github.v3+json",
-                "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
-            }
-        ).json()
-    ]
+    wh_ids = get_wh_ids(tf_output["webhook_urls"][dummy_repo.name])
 
     log.info('Pushing to repo')
     push(dummy_repo.name, dummy_repo.default_branch, {str(uuid.uuid4()) + '.py': 'dummy'})
     
-    wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
-
-    response = get_wh_response("push", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
+    log.info("Waiting on GitHub webhook to receive the response")
+    response = wait_for_gh_wh_response(tf_output["webhook_urls"][dummy_repo.name], "push", wh_ids)
 
     assert json.loads(response['payload']) == {"message": "Payload does not fulfill trigger requirements"}
 
@@ -216,23 +196,13 @@ def test_matched_pr_event(tf, function_start_time, dummy_repo):
     tf.apply(auto_approve=True)
     tf_output = tf.output()
 
-    wh_ids = [
-        delivery["id"] for delivery in 
-        requests.get(
-            f'{tf_output["webhook_urls"][dummy_repo.name]}/deliveries',
-            headers={
-                "Accept": "application/vnd.github.v3+json",
-                "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
-            }
-        ).json()
-    ]
+    wh_ids = get_wh_ids(tf_output["webhook_urls"][dummy_repo.name])
 
     log.info('Creating PR')
     pr(dummy_repo.name, dummy_repo.default_branch, f'feature-{uuid.uuid4()}', {str(uuid.uuid4()) + '.py': 'dummy'}, title=f'test_matched_pr_event-{uuid.uuid4()}')
     
-    wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
-
-    response = get_wh_response("pull_request", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
+    log.info("Waiting on GitHub webhook to receive the response")
+    response = wait_for_gh_wh_response(tf_output["webhook_urls"][dummy_repo.name], "pull_request", wh_ids)
 
     assert json.loads(response['payload']) == {"message": "Payload fulfills atleast one filter group"}
     
@@ -266,23 +236,13 @@ def test_unmatched_pr_event(tf, function_start_time, dummy_repo):
     tf.apply(auto_approve=True)
     tf_output = tf.output()
 
-    wh_ids = [
-        delivery["id"] for delivery in 
-        requests.get(
-            f'{tf_output["webhook_urls"][dummy_repo.name]}/deliveries',
-            headers={
-                "Accept": "application/vnd.github.v3+json",
-                "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
-            }
-        ).json()
-    ]
+    wh_ids = get_wh_ids(tf_output["webhook_urls"][dummy_repo.name])
 
     log.info('Creating PR')
     pr(dummy_repo.name, dummy_repo.default_branch, f'feature-{uuid.uuid4()}', {str(uuid.uuid4()) + '.py': 'dummy'}, title=f'test_matched_pr_event-{uuid.uuid4()}')
     
-    wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
-
-    response = get_wh_response("pull_request", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
+    log.info("Waiting on GitHub webhook to receive the response")
+    response = wait_for_gh_wh_response(tf_output["webhook_urls"][dummy_repo.name], "pull_request", wh_ids)
 
     assert json.loads(response['payload']) == {"message": "Payload does not fulfill trigger requirements"}
 
@@ -312,22 +272,12 @@ def test_unsupported_gh_label_event(tf, function_start_time, dummy_repo):
 
     tf_output = tf.output()
 
-    wh_ids = [
-        delivery["id"] for delivery in 
-        requests.get(
-            f'{tf_output["webhook_urls"][dummy_repo.name]}/deliveries',
-            headers={
-                "Accept": "application/vnd.github.v3+json",
-                "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
-            }
-        ).json()
-    ]
+    wh_ids = get_wh_ids(tf_output["webhook_urls"][dummy_repo.name])
 
     log.info('Creating label')
     dummy_repo.create_label('test', 'B60205')    
     
-    wait_for_lambda_invocation(tf_output['function_name'], function_start_time)
+    log.info("Waiting on GitHub webhook to receive the response")
+    response = wait_for_gh_wh_response(tf_output["webhook_urls"][dummy_repo.name], "label", wh_ids)
 
-    response = get_wh_response("label", tf_output["webhook_urls"][dummy_repo.name], exclude_ids=wh_ids)[0]
-
-    assert json.loads(response['payload']['message']) == {"message": "Github event is not supported: label"}
+    assert json.loads(response['payload'])['message'] == "Github event is not supported: label"

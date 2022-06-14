@@ -66,7 +66,6 @@ def wait_for_lambda_invocation(function_name, start_time, expected_count=1, time
         actual_count = lambda_invocation_count(function_name, start_time)
         log.debug(f'Refreshed Count: {actual_count}')
 
-
 def wait_for_target_github_event_invocation(lambda_log_group_arn, function_start_time):
     '''
     If the Terraform module creates a webhook, the webhook automatically sends a ping event to the endpoint after creation.
@@ -184,6 +183,18 @@ def pr(repo_name, base, head, files, commit_message='test', title='Test PR', bod
 
     return pr
 
+def get_wh_ids(webhook_url):
+    return [
+        delivery["id"] for delivery in 
+        requests.get(
+            f'{webhook_url}/deliveries',
+            headers={
+                "Accept": "application/vnd.github.v3+json",
+                "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
+            }
+        ).json()
+    ]
+
 
 def get_wh_response(event, url, exclude_ids=[]):
 
@@ -205,3 +216,17 @@ def get_wh_response(event, url, exclude_ids=[]):
             "Authorization": f"token {os.environ['TF_VAR_testing_github_token']}"
         }
     ).json()['response'] for id in ids]
+
+def wait_for_gh_wh_response(webhook_url, event, exclude_ids, timeout=60):
+
+    timeout = time.time() + timeout
+    responses = get_wh_response(event, webhook_url, exclude_ids=exclude_ids)
+    count = len(responses)
+    log.debug(f"Start count: {count}")
+    while count == 0:
+        time.sleep(5)
+        responses = get_wh_response(event, webhook_url, exclude_ids=exclude_ids)
+        count = len(responses)
+        log.debug(f"Refreshed count: {count}")
+
+    return responses[0]
