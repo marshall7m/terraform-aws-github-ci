@@ -1,5 +1,23 @@
 variable "testing_github_token" {
-  description = "GitHub token to create GitHub webhook for repos defined in var.repos (permission: )"
+  description = <<EOF
+GitHub token to create GitHub webhook for repos defined in var.repos (permission: )
+The permissions for the token is dependent on if the repos has public or private visibility.
+Permissions:
+  private:
+    - admin:repo_hook
+    - repo
+    - read:org (if organization repo)
+    - delete_repo
+    - read:discussion
+  public:
+    - admin:repo_hook
+    - repo:status
+    - public_repo
+    - read:org (if organization repo)
+    - delete_repo
+    - read:discussion
+See more about OAuth scopes here: https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps
+EOF
   type        = string
   sensitive   = true
   default     = null
