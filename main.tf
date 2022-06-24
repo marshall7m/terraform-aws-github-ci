@@ -6,33 +6,12 @@ locals {
       })
     ]
   })]
-  lambda_destination_arns  = concat(var.lambda_success_destination_arns, var.lambda_failure_destination_arns)
   lambda_deps_zip_path     = "${path.module}/lambda_deps.zip"
   lambda_deps_requirements = "PyGithub==1.54.1"
 }
 
-resource "aws_lambda_function_event_invoke_config" "lambda" {
-  count         = length(local.lambda_destination_arns) > 0 ? 1 : 0
-  function_name = module.lambda.function_name
-  destination_config {
-    dynamic "on_success" {
-      for_each = toset(var.lambda_success_destination_arns)
-      content {
-        destination = on_success.value
-      }
-    }
-
-    dynamic "on_failure" {
-      for_each = toset(var.lambda_failure_destination_arns)
-      content {
-        destination = on_failure.value
-      }
-    }
-  }
-}
-
 module "lambda" {
-  source           = "github.com/marshall7m/terraform-aws-lambda"
+  source           = "github.com/marshall7m/terraform-aws-lambda?ref=v0.1.5"
   filename         = data.archive_file.lambda_function.output_path
   source_code_hash = data.archive_file.lambda_function.output_base64sha256
   function_name    = var.function_name
@@ -45,7 +24,8 @@ module "lambda" {
       arn          = "${local.execution_arn}/*/*"
     }
   ]
-  enable_cw_logs = true
+  lambda_destination_config = var.lambda_destination_config
+  enable_cw_logs            = true
   env_vars = merge({
     GITHUB_WEBHOOK_SECRET_SSM_KEY = var.github_secret_ssm_key
   }, var.includes_private_repo ? { GITHUB_TOKEN_SSM_KEY = var.github_token_ssm_key } : {})
@@ -104,11 +84,6 @@ data "archive_file" "lambda_function" {
   output_path = "${path.module}/function.zip"
 }
 
-data "aws_arn" "lambda_dest" {
-  count = length(local.lambda_destination_arns)
-  arn   = local.lambda_destination_arns[count.index]
-}
-
 data "aws_kms_key" "ssm" {
   key_id = "alias/aws/ssm"
 }
@@ -138,54 +113,6 @@ data "aws_iam_policy_document" "lambda" {
         "ssm:GetParameter"
       ]
       resources = [try(aws_ssm_parameter.github_token[0].arn, data.aws_ssm_parameter.github_token[0].arn)]
-    }
-  }
-
-  dynamic "statement" {
-    for_each = contains(try(data.aws_arn.lambda_dest[*].service, []), "sqs") ? [1] : []
-    content {
-      sid    = "InvokeSqsDestination"
-      effect = "Allow"
-      actions = [
-        "sqs:SendMessage"
-      ]
-      resources = [for entity in data.aws_arn.lambda_dest : entity.arn if entity.service == "sqs"]
-    }
-  }
-
-  dynamic "statement" {
-    for_each = contains(try(data.aws_arn.lambda_dest[*].service, []), "sns") ? [1] : []
-    content {
-      sid    = "InvokeSnsDestination"
-      effect = "Allow"
-      actions = [
-        "sns:Publish"
-      ]
-      resources = [for entity in data.aws_arn.lambda_dest : entity.arn if entity.service == "sns"]
-    }
-  }
-
-  dynamic "statement" {
-    for_each = contains(try(data.aws_arn.lambda_dest[*].service, []), "events") ? [1] : []
-    content {
-      sid    = "InvokeEventsDestination"
-      effect = "Allow"
-      actions = [
-        "events:PutEvents"
-      ]
-      resources = [for entity in data.aws_arn.lambda_dest : entity.arn if entity.service == "events"]
-    }
-  }
-
-  dynamic "statement" {
-    for_each = contains(try(data.aws_arn.lambda_dest[*].service, []), "lambda") ? [1] : []
-    content {
-      sid    = "InvokeLambdaDestination"
-      effect = "Allow"
-      actions = [
-        "lambda:InvokeFunction"
-      ]
-      resources = [for entity in data.aws_arn.lambda_dest : entity.arn if entity.service == "lambda"]
     }
   }
 }
