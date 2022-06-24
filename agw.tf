@@ -28,7 +28,7 @@ resource "aws_cloudwatch_log_group" "agw" {
 resource "aws_api_gateway_resource" "this" {
   rest_api_id = local.api_id
   parent_id   = var.create_api ? aws_api_gateway_rest_api.this[0].root_resource_id : var.root_resource_id
-  path_part   = "github"
+  path_part   = var.api_resource_path
   lifecycle {
     create_before_destroy = true
   }

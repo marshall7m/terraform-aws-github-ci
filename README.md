@@ -63,6 +63,7 @@
 | <a name="input_api_description"></a> [api\_description](#input\_api\_description) | Description for API-Gateway | `string` | `"API used for custom GitHub webhooks"` | no |
 | <a name="input_api_id"></a> [api\_id](#input\_api\_id) | Pre-existing AWS API ID to attach resources to. If not specified, a new API will be created and defining var.api\_name will be required | `string` | `null` | no |
 | <a name="input_api_name"></a> [api\_name](#input\_api\_name) | Name of API-Gateway to be created | `string` | `"github-webhook"` | no |
+| <a name="input_api_resource_path"></a> [api\_resource\_path](#input\_api\_resource\_path) | AWS API resource path part to create | `string` | `"github"` | no |
 | <a name="input_async_lambda_invocation"></a> [async\_lambda\_invocation](#input\_async\_lambda\_invocation) | Determines if the backend Lambda function for the API Gateway is invoked asynchronously.<br>If true, the API Gateway REST API method will not return the Lambda results to the client.<br>See for more info: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-integration-async.html | `bool` | `false` | no |
 | <a name="input_create_api"></a> [create\_api](#input\_create\_api) | Determines if Terraform module just create the AWS REST API | `bool` | n/a | yes |
 | <a name="input_deployment_triggers"></a> [deployment\_triggers](#input\_deployment\_triggers) | Arbitrary mapping that when changed causes a redeployment of the API | `map(string)` | `{}` | no |

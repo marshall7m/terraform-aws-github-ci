@@ -9,6 +9,13 @@ variable "api_id" {
   type        = string
   default     = null
 }
+
+variable "api_resource_path" {
+  description = "AWS API resource path part to create"
+  type        = string
+  default     = "github"
+}
+
 variable "root_resource_id" {
   description = "Pre-existing AWS API resource ID associated with the API defined within var.api_id to be used as the root resource ID for the github API resource"
   type        = string
