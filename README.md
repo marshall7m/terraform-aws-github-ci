@@ -89,6 +89,7 @@
 | <a name="output_agw_log_group_arn"></a> [agw\_log\_group\_arn](#output\_agw\_log\_group\_arn) | ARN of the CloudWatch log group associated with the API gateway |
 | <a name="output_agw_log_group_name"></a> [agw\_log\_group\_name](#output\_agw\_log\_group\_name) | Name of the CloudWatch log group associated with the API gateway |
 | <a name="output_api_changes_sha"></a> [api\_changes\_sha](#output\_api\_changes\_sha) | SHA value of file that contains API-related configurations. Can be used as a trigger for API deployments (see AWS resource: aws\_api\_gateway\_deployment) |
+| <a name="output_api_id"></a> [api\_id](#output\_api\_id) | SHA value of file that contains API-related configurations. Can be used as a trigger for API deployments (see AWS resource: aws\_api\_gateway\_deployment) |
 | <a name="output_api_stage_name"></a> [api\_stage\_name](#output\_api\_stage\_name) | API stage name |
 | <a name="output_deployment_invoke_url"></a> [deployment\_invoke\_url](#output\_deployment\_invoke\_url) | API stage's URL |
 | <a name="output_function_arn"></a> [function\_arn](#output\_function\_arn) | ARN of AWS Lambda Function used to validate Github webhook request |

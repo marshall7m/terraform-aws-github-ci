@@ -55,6 +55,11 @@ output "api_changes_sha" {
   value       = filesha1("${path.module}/agw.tf")
 }
 
+output "api_id" {
+  description = "SHA value of file that contains API-related configurations. Can be used as a trigger for API deployments (see AWS resource: aws_api_gateway_deployment)"
+  value       = local.api_id
+}
+
 output "agw_log_group_arn" {
   description = "ARN of the CloudWatch log group associated with the API gateway"
   value       = try(aws_cloudwatch_log_group.agw[0].arn, null)
