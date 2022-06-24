@@ -24,8 +24,8 @@ module "lambda" {
       arn          = "${local.execution_arn}/*/*"
     }
   ]
-  lambda_destination_config = var.lambda_destination_config
-  enable_cw_logs            = true
+  destination_config = var.lambda_destination_config
+  enable_cw_logs     = true
   env_vars = merge({
     GITHUB_WEBHOOK_SECRET_SSM_KEY = var.github_secret_ssm_key
   }, var.includes_private_repo ? { GITHUB_TOKEN_SSM_KEY = var.github_token_ssm_key } : {})
