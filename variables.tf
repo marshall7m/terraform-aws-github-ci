@@ -67,6 +67,8 @@ granular permissions. See thread here: https://github.community/t/can-i-give-rea
 Params:
   `name`: Repository name
   `is_private`: Whether the repo's visibility is set to private
+  `create_github_token_ssm_param`: Determines if the module should create or load the GitHub token AWS SSM parameter (defaults to true)
+  `github_token_ssm_param_arn`: GitHub token AWS SSM Parameter Store ARN
   `github_token_ssm_key`: Key for the AWS SSM Parameter Store GitHub token resource
     If not defined, the module will generate one.
   `github_token_ssm_value`: Value for the AWS SSM Parameter Store GitHub token resource used for accessing the repo
@@ -93,11 +95,13 @@ Params:
   ]
   EOF
   type = list(object({
-    name                   = string
-    is_private             = optional(bool)
-    github_token_ssm_key   = optional(string)
-    github_token_ssm_value = optional(string)
-    github_token_ssm_tags  = optional(map(string))
+    name                          = string
+    is_private                    = optional(bool)
+    create_github_token_ssm_param = optional(bool)
+    github_token_ssm_param_arn    = optional(string)
+    github_token_ssm_key          = optional(string)
+    github_token_ssm_value        = optional(string)
+    github_token_ssm_tags         = optional(map(string))
     filter_groups = list(list(object({
       type                   = string
       pattern                = string

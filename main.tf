@@ -8,11 +8,16 @@ locals {
   })]
   private_repos = [for repo in local.repos : defaults(
     repo, {
-      github_token_ssm_key = "${var.function_name}-${repo.name}-gh-token"
+      create_github_token_ssm_param = true
+      github_token_ssm_key          = repo.create_github_token_ssm_param ? "${var.function_name}-${repo.name}-gh-token" : null
     }
   ) if repo.is_private == true]
 
   github_secret_ssm_key = coalesce(var.github_secret_ssm_key, "${var.function_name}-secret")
+
+  create_ssm_params   = [for repo in local.private_repos : repo if repo.create_github_token_ssm_param == true]
+  load_ssm_param_arns = [for repo in local.private_repos : repo.github_token_ssm_param_arn if repo.create_github_token_ssm_param == false && repo.github_token_ssm_param_arn != null]
+  load_ssm_param_keys = [for repo in local.private_repos : repo.github_token_ssm_key if repo.create_github_token_ssm_param == false && repo.github_token_ssm_key != null]
 }
 
 data "aws_kms_key" "ssm" {
@@ -46,7 +51,7 @@ data "aws_iam_policy_document" "lambda" {
       actions = [
         "ssm:GetParameter"
       ]
-      resources = aws_ssm_parameter.github_token[*].arn
+      resources = concat(local.load_ssm_param_arns, try(aws_ssm_parameter.github_token[*].arn, []), try(data.aws_ssm_parameter.github_token[*].arn, []))
     }
   }
 }
@@ -76,7 +81,12 @@ module "lambda_function" {
   # since the latter involves creating a new deployment when the token(s) need to be refreshed
   environment_variables = {
     GITHUB_WEBHOOK_SECRET_SSM_KEY = local.github_secret_ssm_key
-    TOKEN_SSM_KEYS                = jsonencode({ for repo in local.private_repos : repo.name => repo.github_token_ssm_key })
+    TOKEN_SSM_KEYS = jsonencode({
+      for repo in local.private_repos : repo.name => coalesce(
+        try(split(":parameter", repo.github_token_ssm_param_arn)[1], null),
+        repo.github_token_ssm_key
+      )
+    })
   }
 
   publish = true
@@ -125,12 +135,17 @@ resource "github_repository_webhook" "this" {
 }
 
 resource "aws_ssm_parameter" "github_token" {
-  count       = length(local.private_repos)
-  name        = local.private_repos[count.index].github_token_ssm_key
+  count       = length(local.create_ssm_params)
+  name        = local.create_ssm_params[count.index].github_token_ssm_key
   description = "GitHub token used for accessing the private repo within ${var.function_name}"
   type        = "SecureString"
-  value       = local.private_repos[count.index].github_token_ssm_value
-  tags        = local.private_repos[count.index].github_token_ssm_tags
+  value       = local.create_ssm_params[count.index].github_token_ssm_value
+  tags        = local.create_ssm_params[count.index].github_token_ssm_tags
+}
+
+data "aws_ssm_parameter" "github_token" {
+  count = length(local.load_ssm_param_keys)
+  name  = local.load_ssm_param_keys[count.index]
 }
 
 resource "aws_ssm_parameter" "github_secret" {
