@@ -330,7 +330,8 @@ def test_unmatched_pr_event(tf, function_start_time, dummy_repo):
 
 def test_unsupported_gh_label_event(tf, function_start_time, dummy_repo):
     """
-    Creates a GitHub pull request event that doesn't meet any of the filter groups' requirements and ensures that the
+    Creates a GitHub pull request event that doesn't have payload mapping support.
+    The payload meets atleast one of the filter groups' requirements and ensures that the
     associated API response is valid.
     """
     tf_vars = {
@@ -363,5 +364,5 @@ def test_unsupported_gh_label_event(tf, function_start_time, dummy_repo):
 
     assert (
         json.loads(response["payload"])["message"]
-        == "Github event is not supported: label"
+        == "Payload fulfills atleast one filter group"
     )
