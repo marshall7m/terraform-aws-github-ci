@@ -65,7 +65,7 @@
 | <a name="input_execution_arn"></a> [execution\_arn](#input\_execution\_arn) | Pre-existing AWS API execution ARN that will be allowed to invoke the Lambda function | `string` | `null` | no |
 | <a name="input_function_name"></a> [function\_name](#input\_function\_name) | Name of Lambda function | `string` | `"github-webhook-request-validator"` | no |
 | <a name="input_github_secret_ssm_description"></a> [github\_secret\_ssm\_description](#input\_github\_secret\_ssm\_description) | Github secret SSM parameter description | `string` | `"Secret value for Github Webhooks"` | no |
-| <a name="input_github_secret_ssm_key"></a> [github\_secret\_ssm\_key](#input\_github\_secret\_ssm\_key) | Key for github secret within AWS SSM Parameter Store | `string` | `"github-webhook-secret"` | no |
+| <a name="input_github_secret_ssm_key"></a> [github\_secret\_ssm\_key](#input\_github\_secret\_ssm\_key) | Key for github secret within AWS SSM Parameter Store | `string` | `null` | no |
 | <a name="input_github_secret_ssm_tags"></a> [github\_secret\_ssm\_tags](#input\_github\_secret\_ssm\_tags) | Tags for Github webhook secret SSM parameter | `map(string)` | `{}` | no |
 | <a name="input_lambda_destination_on_failure"></a> [lambda\_destination\_on\_failure](#input\_lambda\_destination\_on\_failure) | AWS ARN of the service that will be invoked if Lambda function fails | `string` | `null` | no |
 | <a name="input_lambda_destination_on_success"></a> [lambda\_destination\_on\_success](#input\_lambda\_destination\_on\_success) | AWS ARN of the service that will be invoked if Lambda function succeeds | `string` | `null` | no |

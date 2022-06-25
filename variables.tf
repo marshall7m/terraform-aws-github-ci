@@ -115,7 +115,7 @@ Params:
 variable "github_secret_ssm_key" {
   description = "Key for github secret within AWS SSM Parameter Store"
   type        = string
-  default     = "github-webhook-secret" #tfsec:ignore:GEN001
+  default     = null
 }
 
 variable "github_secret_ssm_description" {
