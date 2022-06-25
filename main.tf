@@ -11,7 +11,7 @@ locals {
 }
 
 module "lambda" {
-  source           = "github.com/marshall7m/terraform-aws-lambda?ref=v0.1.5"
+  source           = "github.com/marshall7m/terraform-aws-lambda?ref=v0.1.6"
   filename         = data.archive_file.lambda_function.output_path
   source_code_hash = data.archive_file.lambda_function.output_base64sha256
   function_name    = var.function_name

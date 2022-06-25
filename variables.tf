@@ -168,11 +168,11 @@ See for more info: https://docs.aws.amazon.com/apigateway/latest/developerguide/
 
 variable "lambda_destination_config" {
   description = "AWS ARNs of services that will be invoked if Lambda function succeeds or fails"
-  type = list(object({
+  type = object({
     success = optional(string)
     failure = optional(string)
-  }))
-  default = []
+  })
+  default = {}
 }
 
 variable "function_name" {
