@@ -32,7 +32,7 @@ def lambda_handler(event, context):
             Lambda's env var: `GITHUB_TOKEN_SSM_KEY` is required.
     """
 
-    log.debug(f"Event:\n{event}")
+    log.debug(f"Event:\n{pformat(event)}")
 
     try:
         validate_sig(event["headers"]["X-Hub-Signature-256"], event["body"])
@@ -141,39 +141,43 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
         """
         )
 
-    payload_mapping = {}
+    request_mapping = {"event": event}
 
     if event == "pull_request":
-        payload_mapping = {
-            "event": event,
-            "file_path": [
-                path.filename
-                for path in repo.compare(
-                    payload["pull_request"]["base"]["sha"],
-                    payload["pull_request"]["head"]["sha"],
-                ).files
-            ],
-            "commit_message": repo.get_commit(
-                sha=payload["pull_request"]["head"]["sha"]
-            ).commit.message,
-            "base_ref": payload["pull_request"]["base"]["ref"],
-            "head_ref": payload["pull_request"]["head"]["ref"],
-            "actor_account_id": payload["sender"]["id"],
-            "pr_action": payload["action"],
+        request_mapping = {
+            **{
+                "file_path": [
+                    path.filename
+                    for path in repo.compare(
+                        payload["pull_request"]["base"]["sha"],
+                        payload["pull_request"]["head"]["sha"],
+                    ).files
+                ],
+                "commit_message": repo.get_commit(
+                    sha=payload["pull_request"]["head"]["sha"]
+                ).commit.message,
+                "base_ref": payload["pull_request"]["base"]["ref"],
+                "head_ref": payload["pull_request"]["head"]["ref"],
+                "actor_account_id": payload["sender"]["id"],
+                "pr_action": payload["action"],
+            },
+            **request_mapping,
         }
     elif event == "push":
-        payload_mapping = {
-            "event": event,
-            "file_path": [
-                path.filename
-                for path in repo.compare(payload["before"], payload["after"]).files
-            ],
-            "commit_message": payload["head_commit"]["message"],
-            "base_ref": payload["ref"],
-            "actor_account_id": payload["sender"]["id"],
+        request_mapping = {
+            **{
+                "file_path": [
+                    path.filename
+                    for path in repo.compare(payload["before"], payload["after"]).files
+                ],
+                "commit_message": payload["head_commit"]["message"],
+                "base_ref": payload["ref"],
+                "actor_account_id": payload["sender"]["id"],
+            },
+            **request_mapping,
         }
 
-    log.debug(f"Payload Target Values:\n{payload_mapping}")
+    log.debug(f"Payload Target Values:\n{request_mapping}")
     valid = False
 
     try:
@@ -182,9 +186,9 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
             for filter_entry in group:
                 log.debug(f"Filter: {filter_entry}")
 
-                if filter_entry["type"] not in list(payload_mapping.keys()):
+                if filter_entry["type"] not in list(request_mapping.keys()):
                     log.info(
-                        "Filter type not found in payload mapping -- Using JSON path"
+                        "Filter type not found in request mapping -- Using JSON path"
                     )
                     target = [
                         match.value
@@ -194,9 +198,9 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
                     # puts payload value into a list if value is not already a list
                     # so they can be processed with list payload values
                     target = (
-                        [payload_mapping[filter_entry["type"]]]
-                        if not isinstance(payload_mapping[filter_entry["type"]], list)
-                        else payload_mapping[filter_entry["type"]]
+                        [request_mapping[filter_entry["type"]]]
+                        if not isinstance(request_mapping[filter_entry["type"]], list)
+                        else request_mapping[filter_entry["type"]]
                     )
                 log.debug(f"Target values:\n{pformat(target)}")
 
