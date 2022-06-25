@@ -7,7 +7,7 @@ locals {
     ]
   })]
   lambda_deps_zip_path     = "${path.module}/lambda_deps.zip"
-  lambda_deps_requirements = "PyGithub==1.54.1"
+  lambda_deps_requirements = "PyGithub==1.54.1 jsonpath-ng==1.5.3"
 }
 
 module "lambda" {
