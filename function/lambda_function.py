@@ -118,11 +118,14 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
     :param filter_groups: List of filters to check payload with
     """
 
-    if "GITHUB_TOKEN_SSM_KEY" in os.environ:
+    token_ssm_keys = json.loads(os.environ["TOKEN_SSM_KEYS"])
+    log.debug(f"Token SSM Parameter keys:\n{pformat(token_ssm_keys)}")
+    repo_ssm_key = token_ssm_keys.get(payload["repository"]["name"], None)
+    if repo_ssm_key:
         try:
-            github_token = ssm.get_parameter(
-                Name=os.environ["GITHUB_TOKEN_SSM_KEY"], WithDecryption=True
-            )["Parameter"]["Value"]
+            github_token = ssm.get_parameter(Name=repo_ssm_key, WithDecryption=True)[
+                "Parameter"
+            ]["Value"]
             gh = github.Github(github_token)
         except Exception as e:
             log.error(e, exc_info=True)
@@ -136,8 +139,8 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
         log.error(e, exc_info=True)
         raise ClientException(
             """
-        Repository was not found -- If the repository is private ensure that
-        a github token with `repo` permission is set via the var.github_token_ssm_value
+        Repository was not found -- If the repository is private, add a GitHub token with `repo` permissions
+        to the var.repo `github_token_ssm_value` attribute within the associated Terraform module.
         """
         )
 

@@ -60,9 +60,17 @@ variable "deployment_triggers" {
 
 variable "repos" {
   description = <<EOF
-List of named repos to create github webhooks for and their respective filter groups
+List of named GitHub repos and their respective webhook, token and filter group(s) configurations.
+The `github_token_ssm_key` and `github_token_ssm_value` only need to be defined if the repository is private.
+The token defined under `github_token_ssm_value` needs the full `repo` permissions until github creates a repo scoped token with 
+granular permissions. See thread here: https://github.community/t/can-i-give-read-only-access-to-a-private-repo-from-a-developer-account/441/165
 Params:
   `name`: Repository name
+  `is_private`: Whether the repo's visibility is set to private
+  `github_token_ssm_key`: Key for the AWS SSM Parameter Store GitHub token resource
+    If not defined, the module will generate one.
+  `github_token_ssm_value`: Value for the AWS SSM Parameter Store GitHub token resource used for accessing the repo
+  `github_token_ssm_tags`: Tags for the AWS SSM Parameter Store GitHub token resource
   `filter_groups`: List of filter groups that the Github event has to meet. The event has to meet all filters of atleast one group in order to succeed. 
   [
     [ (Filter Group)
@@ -76,15 +84,20 @@ Params:
             `actor_account_id` - Github user IDs
             `commit_message` - GitHub event's commit message
             `file_path` - File paths of new, modified, or deleted files
+            `<JSONPATH>` - Valid JSON path expression that will be used to find the filter value(s) within the GitHub webhook payload
           )
-        `pattern`: Regex pattern that is searched for within the related event's payload attributes. For `type` = `event`, use a single Github webhook event and not a regex pattern.
+        `pattern`: Regex pattern that is matched against the `type` payload attribute. For `type` = `event`, use a single Github webhook event and not a regex pattern.
         `exclude_matched_filter` - If set to true, labels filter group as invalid if it is matched
       }
     ]
   ]
   EOF
   type = list(object({
-    name = string
+    name                   = string
+    is_private             = optional(bool)
+    github_token_ssm_key   = optional(string)
+    github_token_ssm_value = optional(string)
+    github_token_ssm_tags  = optional(map(string))
     filter_groups = list(list(object({
       type                   = string
       pattern                = string
@@ -112,44 +125,6 @@ variable "github_secret_ssm_description" {
 
 variable "github_secret_ssm_tags" {
   description = "Tags for Github webhook secret SSM parameter"
-  type        = map(string)
-  default     = {}
-}
-
-## GITHUB TOKEN ##
-
-variable "github_token_ssm_description" {
-  description = "Github token SSM parameter description"
-  type        = string
-  default     = "Github token used to give access to the payload validator function to get file that differ between commits." #tfsec:ignore:GEN001
-}
-
-variable "github_token_ssm_key" {
-  description = "AWS SSM Parameter Store key for sensitive Github personal token"
-  type        = string
-  default     = "github-webhook-validator-token" #tfsec:ignore:GEN001
-}
-
-variable "github_token_ssm_value" {
-  description = <<EOF
-  Registered Github webhook token associated with the Github provider. 
-  If not provided, module looks for pre-existing SSM parameter via `github_token_ssm_key`.
-  Token needs full `repo` permissions until github creates a repo scoped token with 
-  granular permissions. See thread here: https://github.community/t/can-i-give-read-only-access-to-a-private-repo-from-a-developer-account/441/165
-  NOTE: The token is only needed for private repositories
-  EOF
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "includes_private_repo" {
-  description = "Determines if an AWS System Manager Parameter Store value is needed by the Lambda Function to access private repos"
-  type        = bool
-}
-
-variable "github_token_ssm_tags" {
-  description = "Tags for Github token SSM parameter"
   type        = map(string)
   default     = {}
 }

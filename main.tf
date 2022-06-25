@@ -6,6 +6,13 @@ locals {
       })
     ]
   })]
+  private_repos = [for repo in local.repos : defaults(
+    repo, {
+      github_token_ssm_key = "${var.function_name}-${repo.name}-gh-token"
+    }
+  ) if repo.is_private == true]
+
+  github_secret_ssm_key = coalesce(var.github_secret_ssm_key, "${var.function_name}-secret")
 }
 
 data "aws_kms_key" "ssm" {
@@ -21,22 +28,25 @@ data "aws_iam_policy_document" "lambda" {
     resources = [aws_ssm_parameter.github_secret.arn]
   }
 
-  statement {
-    sid       = "SSMDecryptAccess"
-    effect    = "Allow"
-    actions   = ["kms:Decrypt"]
-    resources = [data.aws_kms_key.ssm.arn]
+  dynamic "statement" {
+    for_each = length(local.private_repos) > 0 ? [1] : []
+    content {
+      sid       = "SSMDecryptAccess"
+      effect    = "Allow"
+      actions   = ["kms:Decrypt"]
+      resources = [data.aws_kms_key.ssm.arn]
+    }
   }
 
   dynamic "statement" {
-    for_each = var.includes_private_repo ? [1] : []
+    for_each = length(local.private_repos) > 0 ? [1] : []
     content {
       sid    = "GithubWebhookTokenReadAccess"
       effect = "Allow"
       actions = [
         "ssm:GetParameter"
       ]
-      resources = [try(aws_ssm_parameter.github_token[0].arn, data.aws_ssm_parameter.github_token[0].arn)]
+      resources = aws_ssm_parameter.github_token[*].arn
     }
   }
 }
@@ -62,9 +72,12 @@ module "lambda_function" {
 
   source_path = "${path.module}/function"
 
-  environment_variables = merge({
-    GITHUB_WEBHOOK_SECRET_SSM_KEY = var.github_secret_ssm_key
-  }, var.includes_private_repo ? { GITHUB_TOKEN_SSM_KEY = var.github_token_ssm_key } : {})
+  # put repo github ssm key mapping within env vars rather than the Lambda function deployment
+  # since the latter involves creating a new deployment when the token(s) need to be refreshed
+  environment_variables = {
+    GITHUB_WEBHOOK_SECRET_SSM_KEY = local.github_secret_ssm_key
+    TOKEN_SSM_KEYS                = jsonencode({ for repo in local.private_repos : repo.name => repo.github_token_ssm_key })
+  }
 
   publish = true
   allowed_triggers = {
@@ -112,21 +125,16 @@ resource "github_repository_webhook" "this" {
 }
 
 resource "aws_ssm_parameter" "github_token" {
-  count       = var.includes_private_repo && var.github_token_ssm_value != "" ? 1 : 0
-  name        = var.github_token_ssm_key
-  description = var.github_token_ssm_description
+  count       = length(local.private_repos)
+  name        = local.private_repos[count.index].github_token_ssm_key
+  description = "GitHub token used for accessing the private repo within ${var.function_name}"
   type        = "SecureString"
-  value       = var.github_token_ssm_value
-  tags        = var.github_token_ssm_tags
-}
-
-data "aws_ssm_parameter" "github_token" {
-  count = var.includes_private_repo && var.github_token_ssm_value == "" ? 1 : 0
-  name  = var.github_token_ssm_key
+  value       = local.private_repos[count.index].github_token_ssm_value
+  tags        = local.private_repos[count.index].github_token_ssm_tags
 }
 
 resource "aws_ssm_parameter" "github_secret" {
-  name        = var.github_secret_ssm_key
+  name        = local.github_secret_ssm_key
   description = var.github_secret_ssm_description
   type        = "SecureString"
   value       = random_password.github_webhook_secret.result

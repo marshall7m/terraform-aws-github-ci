@@ -4,6 +4,7 @@ import logging
 import sys
 import hmac
 import hashlib
+import json
 from unittest.mock import patch, mock_open
 from function import lambda_function
 from collections import defaultdict
@@ -79,6 +80,7 @@ def test_invalid_sig(mock_ssm, header_sig, payload, github_secret, expected_msg)
     assert exc_info.value.args[0] == expected_msg
 
 
+@patch.dict(os.environ, {"TOKEN_SSM_KEYS": json.dumps({"repo": "ssm-key"})})
 @patch("github.Github.get_repo")
 @pytest.mark.parametrize(
     "event,payload,modified_file_paths,pr_commit_message,filter_groups",
@@ -357,6 +359,7 @@ def test_matched_filter_group(
     assert response["message"] == "Payload fulfills atleast one filter group"
 
 
+@patch.dict(os.environ, {"TOKEN_SSM_KEYS": json.dumps({"repo": "ssm-key"})})
 @patch("github.Github.get_repo")
 @pytest.mark.parametrize(
     "event,payload,modified_file_paths,pr_commit_message,filter_groups",

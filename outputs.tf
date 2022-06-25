@@ -65,7 +65,7 @@ output "agw_log_group_name" {
   value       = try(aws_cloudwatch_log_group.agw[0].name, null)
 }
 
-output "github_token_ssm_arn" {
-  description = "ARN of the AWS System Manager Parameter Store key used for the sensitive GitHub Token"
-  value       = try(aws_ssm_parameter.github_token[0].arn, data.aws_ssm_parameter.github_token[0].arn, null)
+output "github_token_ssm_arns" {
+  description = "ARNs of the GitHub token AWS SSM Parameter Store resources"
+  value       = try(aws_ssm_parameter.github_token[*].arn, [])
 }

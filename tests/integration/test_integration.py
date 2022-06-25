@@ -72,14 +72,13 @@ dummy_repo_params = [(False, "public"), (True, "private")]
     params=dummy_repo_params,
     ids=[r[1] for r in dummy_repo_params],
 )
-def dummy_repo(tf, request):
+def dummy_repo(request):
     """Creates a dummy repo for testing"""
     gh = github.Github(os.environ["TF_VAR_testing_github_token"]).get_user()
     name = f"{request.param[1]}-mut-terraform-aws-github-webhook-{uuid.uuid4()}"
     log.info(f"Creating repo: {name}")
     repo = gh.create_repo(name, auto_init=True, private=request.param[0])
 
-    tf.env.update({"TF_VAR_includes_private_repo": str(request.param[0]).lower()})
     yield repo
 
     log.info(f"Deleting dummy repo: {name}")
@@ -110,10 +109,11 @@ def test_invalid_sha_sig(tf, sig, expected_err_msg, dummy_repo):
     """Sends request to the AGW API invoke URL with an invalid signature to the Lambda Function and delivers the right response back to the client."""
 
     tf_vars = {
-        "includes_private_repo": dummy_repo.private,
         "repos": [
             {
                 "name": dummy_repo.name,
+                "is_private": dummy_repo.private,
+                "github_token_ssm_value": os.environ["TF_VAR_github_token_ssm_value"],
                 "filter_groups": [[{"type": "event", "pattern": "push"}]],
             }
         ],
@@ -146,10 +146,11 @@ def test_matched_push_event(tf, dummy_repo):
     associated API response is valid.
     """
     tf_vars = {
-        "includes_private_repo": dummy_repo.private,
         "repos": [
             {
                 "name": dummy_repo.name,
+                "is_private": dummy_repo.private,
+                "github_token_ssm_value": os.environ["TF_VAR_github_token_ssm_value"],
                 "filter_groups": [[{"type": "event", "pattern": "push"}]],
             }
         ],
@@ -186,10 +187,11 @@ def test_unmatched_push_event(tf, dummy_repo):
     """
 
     tf_vars = {
-        "includes_private_repo": dummy_repo.private,
         "repos": [
             {
                 "name": dummy_repo.name,
+                "is_private": dummy_repo.private,
+                "github_token_ssm_value": os.environ["TF_VAR_github_token_ssm_value"],
                 "filter_groups": [
                     [
                         {"type": "event", "pattern": "push"},
@@ -230,10 +232,11 @@ def test_matched_pr_event(tf, dummy_repo):
     associated API response is valid.
     """
     tf_vars = {
-        "includes_private_repo": dummy_repo.private,
         "repos": [
             {
                 "name": dummy_repo.name,
+                "is_private": dummy_repo.private,
+                "github_token_ssm_value": os.environ["TF_VAR_github_token_ssm_value"],
                 "filter_groups": [
                     [
                         {"type": "event", "pattern": "pull_request"},
@@ -278,10 +281,11 @@ def test_unmatched_pr_event(tf, dummy_repo):
     associated API response is valid.
     """
     tf_vars = {
-        "includes_private_repo": dummy_repo.private,
         "repos": [
             {
                 "name": dummy_repo.name,
+                "is_private": dummy_repo.private,
+                "github_token_ssm_value": os.environ["TF_VAR_github_token_ssm_value"],
                 "filter_groups": [
                     [
                         {"type": "event", "pattern": "pull_request"},
@@ -322,15 +326,16 @@ def test_unmatched_pr_event(tf, dummy_repo):
 
 def test_base_request_mapping_with_label_event(tf, dummy_repo):
     """
-    Creates a GitHub pull request event that uses the base request mapping.
-    The payload meets atleast one of the filter groups' requirements and ensures that the
+    Creates a GitHub label event that uses the base request mapping to get values to filter by.
+    The event meets atleast one of the filter groups' requirements and ensures that the
     associated API response is valid.
     """
     tf_vars = {
-        "includes_private_repo": dummy_repo.private,
         "repos": [
             {
                 "name": dummy_repo.name,
+                "is_private": dummy_repo.private,
+                "github_token_ssm_value": os.environ["TF_VAR_github_token_ssm_value"],
                 "filter_groups": [[{"type": "event", "pattern": "label"}]],
             }
         ],
