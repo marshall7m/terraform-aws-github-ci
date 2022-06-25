@@ -104,7 +104,8 @@ Params:
       exclude_matched_filter = optional(bool)
     })))
   }))
-  default = []
+  sensitive = true
+  default   = []
 }
 
 # SSM #
