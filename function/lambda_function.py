@@ -53,7 +53,7 @@ def lambda_handler(event, context):
         raise ClientException("Repository name could not be found in payload")
     log.info(f"Triggered Repo: {repo_name}")
 
-    with open("/opt/filter_groups.json") as f:
+    with open(f"{os.path.dirname(__file__)}/filter_groups.json") as f:
         all_repos_filter_groups = json.load(f)
         log.debug(f"All repos filter groups:\n{all_repos_filter_groups}")
         filter_groups = all_repos_filter_groups[repo_name]

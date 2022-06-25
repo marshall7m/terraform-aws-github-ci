@@ -35,11 +35,6 @@ output "lambda_log_group_name" {
   value       = module.lambda_function.lambda_cloudwatch_log_group_name
 }
 
-output "lambda_deps" {
-  description = "Package depedency's file configurations for the Lambda Function"
-  value       = data.archive_file.lambda_deps
-}
-
 output "api_stage_name" {
   description = "API stage name"
   value       = try(aws_api_gateway_stage.this.stage_name, null)

@@ -11,11 +11,9 @@
 
 | Name | Version |
 |------|---------|
-| <a name="provider_archive"></a> [archive](#provider\_archive) | n/a |
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 3.22 |
 | <a name="provider_github"></a> [github](#provider\_github) | >=4.4.0 |
 | <a name="provider_local"></a> [local](#provider\_local) | n/a |
-| <a name="provider_null"></a> [null](#provider\_null) | n/a |
 | <a name="provider_random"></a> [random](#provider\_random) | n/a |
 
 ## Modules
@@ -23,7 +21,6 @@
 | Name | Source | Version |
 |------|--------|---------|
 | <a name="module_lambda_function"></a> [lambda\_function](#module\_lambda\_function) | terraform-aws-modules/lambda/aws | 3.3.1 |
-| <a name="module_lambda_layer"></a> [lambda\_layer](#module\_lambda\_layer) | terraform-aws-modules/lambda/aws | 3.3.1 |
 
 ## Resources
 
@@ -49,9 +46,7 @@
 | [aws_ssm_parameter.github_token](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssm_parameter) | resource |
 | [github_repository_webhook.this](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_webhook) | resource |
 | [local_file.filter_groups](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file) | resource |
-| [null_resource.lambda_pip_deps](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [random_password.github_webhook_secret](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) | resource |
-| [archive_file.lambda_deps](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
 | [aws_iam_policy_document.lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_kms_key.ssm](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/kms_key) | data source |
 | [aws_ssm_parameter.github_token](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
@@ -101,7 +96,6 @@
 | <a name="output_function_name"></a> [function\_name](#output\_function\_name) | Name of the Lambda Function used to validate Github webhook request |
 | <a name="output_github_token_ssm_arn"></a> [github\_token\_ssm\_arn](#output\_github\_token\_ssm\_arn) | ARN of the AWS System Manager Parameter Store key used for the sensitive GitHub Token |
 | <a name="output_github_webhook_invoke_url"></a> [github\_webhook\_invoke\_url](#output\_github\_webhook\_invoke\_url) | API URL the github webhook will ping |
-| <a name="output_lambda_deps"></a> [lambda\_deps](#output\_lambda\_deps) | Package depedency's file configurations for the Lambda Function |
 | <a name="output_lambda_log_group_arn"></a> [lambda\_log\_group\_arn](#output\_lambda\_log\_group\_arn) | ARN of the CloudWatch log group associated with the Lambda Function |
 | <a name="output_lambda_log_group_name"></a> [lambda\_log\_group\_name](#output\_lambda\_log\_group\_name) | Name of the CloudWatch log group associated with the Lambda Function |
 | <a name="output_webhook_ids"></a> [webhook\_ids](#output\_webhook\_ids) | Map of repo webhook IDs |

@@ -6,9 +6,6 @@ locals {
       })
     ]
   })]
-
-  lambda_deps_zip_path = "${path.module}/deps/${var.function_name}-deps.zip"
-  lambda_deps_cmd      = "pip install --upgrade --target ${path.module}/deps/python PyGithub==1.54.1 jsonpath-ng==1.5.3"
 }
 
 data "aws_kms_key" "ssm" {
@@ -49,15 +46,22 @@ resource "aws_iam_policy" "lambda" {
   policy = data.aws_iam_policy_document.lambda.json
 }
 
+# using file for filter groups given lambda functions have a size limit of 4KB for env vars
+resource "local_file" "filter_groups" {
+  content  = jsonencode({ for repo in local.repos : repo.name => repo.filter_groups })
+  filename = "${path.module}/function/filter_groups.json"
+}
+
 module "lambda_function" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "3.3.1"
 
   function_name = var.function_name
   handler       = "lambda_function.lambda_handler"
-  runtime       = "python3.8"
+  runtime       = "python3.9"
 
   source_path = "${path.module}/function"
+
   environment_variables = merge({
     GITHUB_WEBHOOK_SECRET_SSM_KEY = var.github_secret_ssm_key
   }, var.includes_private_repo ? { GITHUB_TOKEN_SSM_KEY = var.github_token_ssm_key } : {})
@@ -84,49 +88,10 @@ module "lambda_function" {
   vpc_subnet_ids         = var.lambda_vpc_subnet_ids
   vpc_security_group_ids = var.lambda_vpc_security_group_ids
   attach_network_policy  = var.lambda_vpc_attach_network_policy
-}
 
-
-resource "null_resource" "lambda_pip_deps" {
-  triggers = {
-    requirements_hash = base64sha256(local.lambda_deps_cmd)
-    # use zip file hash as a trigger so the command is executed even when
-    # `terraform init -upgrade` removes the zip file on new installation of terraform module
-    zip_hash = fileexists(local.lambda_deps_zip_path) ? 0 : timestamp()
-  }
-  provisioner "local-exec" {
-    # pip install runtime packages needed for function
-    command = local.lambda_deps_cmd
-  }
-}
-
-#using lambda layer file for filter groups given lambda functions have a size limit of 4KB for env vars and easier parsing
-resource "local_file" "filter_groups" {
-  content  = jsonencode({ for repo in local.repos : repo.name => repo.filter_groups })
-  filename = "${path.module}/deps/filter_groups.json"
-}
-
-data "archive_file" "lambda_deps" {
-  type        = "zip"
-  source_dir  = "${path.module}/deps"
-  output_path = local.lambda_deps_zip_path
   depends_on = [
-    local_file.filter_groups,
-    null_resource.lambda_pip_deps
+    local_file.filter_groups
   ]
-}
-
-module "lambda_layer" {
-  source  = "terraform-aws-modules/lambda/aws"
-  version = "3.3.1"
-
-  create_layer        = true
-  layer_name          = "${var.function_name}-deps"
-  description         = "Dependencies for lambda function: ${var.function_name}"
-  compatible_runtimes = ["python3.8"]
-
-  create_package         = false
-  local_existing_package = data.archive_file.lambda_deps.output_path
 }
 
 resource "github_repository_webhook" "this" {
