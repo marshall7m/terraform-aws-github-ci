@@ -22,7 +22,8 @@
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_lambda"></a> [lambda](#module\_lambda) | github.com/marshall7m/terraform-aws-lambda | v0.1.6 |
+| <a name="module_lambda_function"></a> [lambda\_function](#module\_lambda\_function) | terraform-aws-modules/lambda/aws | 3.3.1 |
+| <a name="module_lambda_layer"></a> [lambda\_layer](#module\_lambda\_layer) | terraform-aws-modules/lambda/aws | 3.3.1 |
 
 ## Resources
 
@@ -51,7 +52,6 @@
 | [null_resource.lambda_pip_deps](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [random_password.github_webhook_secret](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) | resource |
 | [archive_file.lambda_deps](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.lambda_function](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
 | [aws_iam_policy_document.lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_kms_key.ssm](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/kms_key) | data source |
 | [aws_ssm_parameter.github_token](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
@@ -78,7 +78,11 @@
 | <a name="input_github_token_ssm_tags"></a> [github\_token\_ssm\_tags](#input\_github\_token\_ssm\_tags) | Tags for Github token SSM parameter | `map(string)` | `{}` | no |
 | <a name="input_github_token_ssm_value"></a> [github\_token\_ssm\_value](#input\_github\_token\_ssm\_value) | Registered Github webhook token associated with the Github provider. <br>  If not provided, module looks for pre-existing SSM parameter via `github_token_ssm_key`.<br>  Token needs full `repo` permissions until github creates a repo scoped token with <br>  granular permissions. See thread here: https://github.community/t/can-i-give-read-only-access-to-a-private-repo-from-a-developer-account/441/165<br>  NOTE: The token is only needed for private repositories | `string` | `""` | no |
 | <a name="input_includes_private_repo"></a> [includes\_private\_repo](#input\_includes\_private\_repo) | Determines if an AWS System Manager Parameter Store value is needed by the Lambda Function to access private repos | `bool` | n/a | yes |
-| <a name="input_lambda_destination_config"></a> [lambda\_destination\_config](#input\_lambda\_destination\_config) | AWS ARNs of services that will be invoked if Lambda function succeeds or fails | <pre>object({<br>    success = optional(string)<br>    failure = optional(string)<br>  })</pre> | `{}` | no |
+| <a name="input_lambda_destination_on_failure"></a> [lambda\_destination\_on\_failure](#input\_lambda\_destination\_on\_failure) | AWS ARN of the service that will be invoked if Lambda function fails | `string` | `null` | no |
+| <a name="input_lambda_destination_on_success"></a> [lambda\_destination\_on\_success](#input\_lambda\_destination\_on\_success) | AWS ARN of the service that will be invoked if Lambda function succeeds | `string` | `null` | no |
+| <a name="input_lambda_vpc_attach_network_policy"></a> [lambda\_vpc\_attach\_network\_policy](#input\_lambda\_vpc\_attach\_network\_policy) | Determines if VPC policy should be added to the Lambda Function's IAM role | `bool` | `false` | no |
+| <a name="input_lambda_vpc_security_group_ids"></a> [lambda\_vpc\_security\_group\_ids](#input\_lambda\_vpc\_security\_group\_ids) | IDs of the AWS VPC security groups the Lambda Function will be attached to | `list(string)` | `[]` | no |
+| <a name="input_lambda_vpc_subnet_ids"></a> [lambda\_vpc\_subnet\_ids](#input\_lambda\_vpc\_subnet\_ids) | IDs of the AWS VPC subnets the Lambda Function will be hosted in | `list(string)` | `[]` | no |
 | <a name="input_repos"></a> [repos](#input\_repos) | List of named repos to create github webhooks for and their respective filter groups<br>Params:<br>  `name`: Repository name<br>  `filter_groups`: List of filter groups that the Github event has to meet. The event has to meet all filters of atleast one group in order to succeed. <br>  [<br>    [ (Filter Group)<br>      {<br>        `type`: The type of filter<br>          (<br>            `event` - Github Webhook events that will invoke the API. Currently only supports: `push` and `pull_request`.<br>            `pr_action` - Pull request actions (e.g. opened, edited, reopened, closed). See more under the action key at: https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#pull_request<br>            `base_ref` - Pull request base ref<br>            `head_ref` - Pull request head ref<br>            `actor_account_id` - Github user IDs<br>            `commit_message` - GitHub event's commit message<br>            `file_path` - File paths of new, modified, or deleted files<br>          )<br>        `pattern`: Regex pattern that is searched for within the related event's payload attributes. For `type` = `event`, use a single Github webhook event and not a regex pattern.<br>        `exclude_matched_filter` - If set to true, labels filter group as invalid if it is matched<br>      }<br>    ]<br>  ] | <pre>list(object({<br>    name = string<br>    filter_groups = list(list(object({<br>      type                   = string<br>      pattern                = string<br>      exclude_matched_filter = optional(bool)<br>    })))<br>  }))</pre> | `[]` | no |
 | <a name="input_root_resource_id"></a> [root\_resource\_id](#input\_root\_resource\_id) | Pre-existing AWS API resource ID associated with the API defined within var.api\_id to be used as the root resource ID for the github API resource | `string` | `null` | no |
 | <a name="input_stage_name"></a> [stage\_name](#input\_stage\_name) | Stage name for the API deployment | `string` | `"prod"` | no |

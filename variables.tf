@@ -166,13 +166,34 @@ See for more info: https://docs.aws.amazon.com/apigateway/latest/developerguide/
   default     = false
 }
 
-variable "lambda_destination_config" {
-  description = "AWS ARNs of services that will be invoked if Lambda function succeeds or fails"
-  type = object({
-    success = optional(string)
-    failure = optional(string)
-  })
-  default = {}
+variable "lambda_destination_on_success" {
+  description = "AWS ARN of the service that will be invoked if Lambda function succeeds"
+  type        = string
+  default     = null
+}
+
+variable "lambda_destination_on_failure" {
+  description = "AWS ARN of the service that will be invoked if Lambda function fails"
+  type        = string
+  default     = null
+}
+
+variable "lambda_vpc_subnet_ids" {
+  description = "IDs of the AWS VPC subnets the Lambda Function will be hosted in"
+  type        = list(string)
+  default     = []
+}
+
+variable "lambda_vpc_security_group_ids" {
+  description = "IDs of the AWS VPC security groups the Lambda Function will be attached to"
+  type        = list(string)
+  default     = []
+}
+
+variable "lambda_vpc_attach_network_policy" {
+  description = "Determines if VPC policy should be added to the Lambda Function's IAM role"
+  type        = bool
+  default     = false
 }
 
 variable "function_name" {

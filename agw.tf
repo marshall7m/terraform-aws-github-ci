@@ -63,7 +63,7 @@ resource "aws_api_gateway_integration" "this" {
     "body" = "$util.escapeJavaScript($input.json('$'))"
   }) }
 
-  uri = module.lambda.function_invoke_arn
+  uri = module.lambda_function.lambda_function_invoke_arn
 }
 
 resource "aws_api_gateway_model" "this" {

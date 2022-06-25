@@ -17,22 +17,22 @@ output "webhook_ids" {
 
 output "function_arn" {
   description = "ARN of AWS Lambda Function used to validate Github webhook request"
-  value       = module.lambda.function_arn
+  value       = module.lambda_function.lambda_function_arn
 }
 
 output "function_name" {
   description = "Name of the Lambda Function used to validate Github webhook request"
-  value       = module.lambda.function_name
+  value       = module.lambda_function.lambda_function_name
 }
 
 output "lambda_log_group_arn" {
   description = "ARN of the CloudWatch log group associated with the Lambda Function"
-  value       = one([module.lambda.cw_log_group_arn])
+  value       = module.lambda_function.lambda_cloudwatch_log_group_arn
 }
 
 output "lambda_log_group_name" {
   description = "Name of the CloudWatch log group associated with the Lambda Function"
-  value       = one([module.lambda.cw_log_group_name])
+  value       = module.lambda_function.lambda_cloudwatch_log_group_name
 }
 
 output "lambda_deps" {

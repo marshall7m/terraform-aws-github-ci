@@ -6,82 +6,9 @@ locals {
       })
     ]
   })]
-  lambda_deps_zip_path     = "${path.module}/lambda_deps.zip"
-  lambda_deps_requirements = "PyGithub==1.54.1 jsonpath-ng==1.5.3"
-}
 
-module "lambda" {
-  source           = "github.com/marshall7m/terraform-aws-lambda?ref=v0.1.6"
-  filename         = data.archive_file.lambda_function.output_path
-  source_code_hash = data.archive_file.lambda_function.output_base64sha256
-  function_name    = var.function_name
-  handler          = "lambda_function.lambda_handler"
-  runtime          = "python3.8"
-  allowed_to_invoke = [
-    {
-      statement_id = "APIGatewayInvokeAccess"
-      principal    = "apigateway.amazonaws.com"
-      arn          = "${local.execution_arn}/*/*"
-    }
-  ]
-  destination_config = var.lambda_destination_config
-  enable_cw_logs     = true
-  env_vars = merge({
-    GITHUB_WEBHOOK_SECRET_SSM_KEY = var.github_secret_ssm_key
-  }, var.includes_private_repo ? { GITHUB_TOKEN_SSM_KEY = var.github_token_ssm_key } : {})
-  custom_role_policy_arns = [
-    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-    aws_iam_policy.lambda.arn
-  ]
-  force_detach_policies = true
-  lambda_layers = [
-    {
-      filename         = data.archive_file.lambda_deps.output_path
-      name             = "${var.function_name}-deps"
-      runtimes         = ["python3.8"]
-      source_code_hash = data.archive_file.lambda_deps.output_base64sha256
-      description      = "Dependencies for lambda function: ${var.function_name}"
-    }
-  ]
-}
-
-
-
-resource "null_resource" "lambda_pip_deps" {
-  triggers = {
-    requirements_hash = base64sha256(local.lambda_deps_requirements)
-    # use zip file hash as a trigger so the command is executed even when
-    # `terraform init -upgrade` removes the zip file on new installation of terraform module
-    zip_hash = fileexists(local.lambda_deps_zip_path) ? 0 : timestamp()
-  }
-  provisioner "local-exec" {
-    # pip install runtime packages needed for function
-    command = <<EOF
-    pip install --upgrade --target ${path.module}/deps/python ${local.lambda_deps_requirements}
-    EOF
-  }
-}
-
-#using lambda layer file for filter groups given lambda functions have a size limit of 4KB for env vars and easier parsing
-resource "local_file" "filter_groups" {
-  content  = jsonencode({ for repo in local.repos : repo.name => repo.filter_groups })
-  filename = "${path.module}/deps/filter_groups.json"
-}
-
-data "archive_file" "lambda_deps" {
-  type        = "zip"
-  source_dir  = "${path.module}/deps"
-  output_path = local.lambda_deps_zip_path
-  depends_on = [
-    local_file.filter_groups,
-    null_resource.lambda_pip_deps
-  ]
-}
-
-data "archive_file" "lambda_function" {
-  type        = "zip"
-  source_dir  = "${path.module}/function"
-  output_path = "${path.module}/function.zip"
+  lambda_deps_zip_path = "${path.module}/deps/${var.function_name}-deps.zip"
+  lambda_deps_cmd      = "pip install --upgrade --target ${path.module}/deps/python PyGithub==1.54.1 jsonpath-ng==1.5.3"
 }
 
 data "aws_kms_key" "ssm" {
@@ -120,6 +47,86 @@ data "aws_iam_policy_document" "lambda" {
 resource "aws_iam_policy" "lambda" {
   name   = var.function_name
   policy = data.aws_iam_policy_document.lambda.json
+}
+
+module "lambda_function" {
+  source  = "terraform-aws-modules/lambda/aws"
+  version = "3.3.1"
+
+  function_name = var.function_name
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.8"
+
+  source_path = "${path.module}/function"
+  environment_variables = merge({
+    GITHUB_WEBHOOK_SECRET_SSM_KEY = var.github_secret_ssm_key
+  }, var.includes_private_repo ? { GITHUB_TOKEN_SSM_KEY = var.github_token_ssm_key } : {})
+
+  publish = true
+  allowed_triggers = {
+    APIGatewayInvokeAccess = {
+      service    = "apigateway"
+      source_arn = "${local.execution_arn}/*/*"
+    }
+  }
+  policies = [
+    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+    aws_iam_policy.lambda.arn
+  ]
+  attach_policies               = true
+  number_of_policies            = 2
+  role_force_detach_policies    = true
+  attach_cloudwatch_logs_policy = true
+
+  destination_on_success = var.lambda_destination_on_success
+  destination_on_failure = var.lambda_destination_on_failure
+
+  vpc_subnet_ids         = var.lambda_vpc_subnet_ids
+  vpc_security_group_ids = var.lambda_vpc_security_group_ids
+  attach_network_policy  = var.lambda_vpc_attach_network_policy
+}
+
+
+resource "null_resource" "lambda_pip_deps" {
+  triggers = {
+    requirements_hash = base64sha256(local.lambda_deps_cmd)
+    # use zip file hash as a trigger so the command is executed even when
+    # `terraform init -upgrade` removes the zip file on new installation of terraform module
+    zip_hash = fileexists(local.lambda_deps_zip_path) ? 0 : timestamp()
+  }
+  provisioner "local-exec" {
+    # pip install runtime packages needed for function
+    command = local.lambda_deps_cmd
+  }
+}
+
+#using lambda layer file for filter groups given lambda functions have a size limit of 4KB for env vars and easier parsing
+resource "local_file" "filter_groups" {
+  content  = jsonencode({ for repo in local.repos : repo.name => repo.filter_groups })
+  filename = "${path.module}/deps/filter_groups.json"
+}
+
+data "archive_file" "lambda_deps" {
+  type        = "zip"
+  source_dir  = "${path.module}/deps"
+  output_path = local.lambda_deps_zip_path
+  depends_on = [
+    local_file.filter_groups,
+    null_resource.lambda_pip_deps
+  ]
+}
+
+module "lambda_layer" {
+  source  = "terraform-aws-modules/lambda/aws"
+  version = "3.3.1"
+
+  create_layer        = true
+  layer_name          = "${var.function_name}-deps"
+  description         = "Dependencies for lambda function: ${var.function_name}"
+  compatible_runtimes = ["python3.8"]
+
+  create_package         = false
+  local_existing_package = data.archive_file.lambda_deps.output_path
 }
 
 resource "github_repository_webhook" "this" {
