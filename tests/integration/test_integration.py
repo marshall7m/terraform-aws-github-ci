@@ -7,7 +7,6 @@ import logging
 import sys
 import github
 import uuid
-import datetime
 
 from tests.integration.utils import (
     pr,
@@ -42,13 +41,6 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.fixture
-def function_start_time():
-    """Returns timestamp of when the function testing started"""
-    start_time = datetime.datetime.now(datetime.timezone.utc)
-    return start_time
-
-
-@pytest.fixture
 def repo():
     test_repos = []
     gh = github.Github(os.environ["TF_VAR_testing_github_token"]).get_user()
@@ -72,7 +64,7 @@ def repo():
             log.info("GitHub repo does not exist")
 
 
-dummy_repo_params = [(False, "public"), (True, "private")]
+dummy_repo_params = [(False, "public")]
 
 
 @pytest.fixture(
@@ -148,7 +140,7 @@ def test_invalid_sha_sig(tf, sig, expected_err_msg, dummy_repo):
     assert response["message"] == expected_err_msg
 
 
-def test_matched_push_event(tf, function_start_time, dummy_repo):
+def test_matched_push_event(tf, dummy_repo):
     """
     Creates a GitHub push event that meets atleast one of the filter groups' requirements and ensures that the
     associated API response is valid.
@@ -187,7 +179,7 @@ def test_matched_push_event(tf, function_start_time, dummy_repo):
     }
 
 
-def test_unmatched_push_event(tf, function_start_time, dummy_repo):
+def test_unmatched_push_event(tf, dummy_repo):
     """
     Creates a GitHub push event that doesn't meet any of the filter groups' requirements and ensures that the
     associated API response is valid.
@@ -232,7 +224,7 @@ def test_unmatched_push_event(tf, function_start_time, dummy_repo):
     }
 
 
-def test_matched_pr_event(tf, function_start_time, dummy_repo):
+def test_matched_pr_event(tf, dummy_repo):
     """
     Creates a GitHub pull request event that meets atleast one of the filter groups' requirements and ensures that the
     associated API response is valid.
@@ -280,7 +272,7 @@ def test_matched_pr_event(tf, function_start_time, dummy_repo):
     }
 
 
-def test_unmatched_pr_event(tf, function_start_time, dummy_repo):
+def test_unmatched_pr_event(tf, dummy_repo):
     """
     Creates a GitHub pull request event that doesn't meet any of the filter groups' requirements and ensures that the
     associated API response is valid.
@@ -328,7 +320,7 @@ def test_unmatched_pr_event(tf, function_start_time, dummy_repo):
     }
 
 
-def test_unsupported_gh_label_event(tf, function_start_time, dummy_repo):
+def test_unsupported_gh_label_event(tf, dummy_repo):
     """
     Creates a GitHub pull request event that doesn't have payload mapping support.
     The payload meets atleast one of the filter groups' requirements and ensures that the
