@@ -16,4 +16,4 @@ __pycache__
 build/*
 /*.egg-info
 *.tfvars.*
-personal_act_setup.sh
+private_act_setup.sh
