@@ -9,7 +9,7 @@ locals {
   private_repos = [for repo in local.repos : defaults(
     repo, {
       create_github_token_ssm_param = true
-      github_token_ssm_key          = repo.create_github_token_ssm_param ? "${var.function_name}-${repo.name}-gh-token" : null
+      github_token_ssm_key          = repo.github_token_ssm_value != null ? "${var.function_name}-${repo.name}-gh-token" : null
     }
   ) if repo.is_private == true]
 
