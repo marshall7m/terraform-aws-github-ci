@@ -208,6 +208,7 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
                 log.debug(f"Target values:\n{pformat(target)}")
 
                 for value in target:
+                    value = str(value)
                     log.debug(f"Target value:\n{value}")
                     if (
                         re.search(filter_entry["pattern"], value)
