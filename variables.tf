@@ -187,3 +187,9 @@ variable "lambda_attach_async_event_policy" {
   type        = bool
   default     = false
 }
+
+variable "lambda_create_async_event_config" {
+  description = "Determines if the Lambda Function will call the destination asynchronously"
+  type        = bool
+  default     = false
+}
