@@ -181,3 +181,9 @@ variable "function_name" {
   type        = string
   default     = "github-webhook-request-validator"
 }
+
+variable "lambda_attach_async_event_policy" {
+  description = "Determines if a policy should be attached to the Lambda Function's role to allow asynchronous calls to destination ARNs"
+  type        = bool
+  default     = false
+}

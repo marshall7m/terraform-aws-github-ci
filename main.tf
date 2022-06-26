@@ -104,6 +104,7 @@ module "lambda_function" {
   number_of_policies            = 2
   role_force_detach_policies    = true
   attach_cloudwatch_logs_policy = true
+  attach_async_event_policy     = var.lambda_attach_async_event_policy
 
   destination_on_success = var.lambda_destination_on_success
   destination_on_failure = var.lambda_destination_on_failure
