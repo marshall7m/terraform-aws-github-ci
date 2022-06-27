@@ -106,8 +106,9 @@ module "lambda_function" {
   attach_cloudwatch_logs_policy = true
   attach_async_event_policy     = var.lambda_attach_async_event_policy
 
-  destination_on_success = var.lambda_destination_on_success
-  destination_on_failure = var.lambda_destination_on_failure
+  create_async_event_config = var.lambda_create_async_event_config
+  destination_on_success    = var.lambda_destination_on_success
+  destination_on_failure    = var.lambda_destination_on_failure
 
   vpc_subnet_ids         = var.lambda_vpc_subnet_ids
   vpc_security_group_ids = var.lambda_vpc_security_group_ids
