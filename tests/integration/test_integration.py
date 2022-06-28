@@ -222,7 +222,9 @@ def test_unmatched_push_event(tf, dummy_repo):
     log.debug(f"Response:\n{pformat(response)}")
 
     assert json.loads(response["payload"]) == {
-        "message": "Payload does not fulfill trigger requirements"
+        "isError": True,
+        "type": "ClientException",
+        "message": "Payload does not fulfill trigger requirements",
     }
 
 
@@ -320,7 +322,9 @@ def test_unmatched_pr_event(tf, dummy_repo):
     log.debug(f"Response:\n{pformat(response)}")
 
     assert json.loads(response["payload"]) == {
-        "message": "Payload does not fulfill trigger requirements"
+        "isError": True,
+        "type": "ClientException",
+        "message": "Payload does not fulfill trigger requirements",
     }
 
 

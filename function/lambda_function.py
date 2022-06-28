@@ -234,7 +234,7 @@ def validate_payload(event: str, payload: dict, filter_groups: List[dict]) -> No
     if valid:
         return {"message": "Payload fulfills atleast one filter group"}
     else:
-        return {"message": "Payload does not fulfill trigger requirements"}
+        raise ClientException("Payload does not fulfill trigger requirements")
 
 
 class ClientException(Exception):

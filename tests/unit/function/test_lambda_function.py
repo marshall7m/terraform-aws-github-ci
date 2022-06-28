@@ -5,6 +5,7 @@ import sys
 import hmac
 import hashlib
 import json
+import re
 from unittest.mock import patch, mock_open
 from function import lambda_function
 from collections import defaultdict
@@ -74,10 +75,8 @@ def test_invalid_sig(mock_ssm, header_sig, payload, github_secret, expected_msg)
     """Ensure that validate_sig() raises the expected exception when the header signature is invalid"""
     mock_ssm.get_parameter.return_value = {"Parameter": {"Value": github_secret}}
 
-    with pytest.raises(lambda_function.ClientException) as exc_info:
+    with pytest.raises(lambda_function.ClientException, match=re.escape(expected_msg)):
         lambda_function.validate_sig(header_sig, payload)
-
-    assert exc_info.value.args[0] == expected_msg
 
 
 @patch.dict(os.environ, {"TOKEN_SSM_KEYS": json.dumps({"repo": "ssm-key"})})
@@ -584,9 +583,11 @@ def test_no_matched_filter_group(
     # needed only with PR events since PR commit message is looked up via repo.get_commit() since it's not in payload
     mock_repo.return_value.get_commit.return_value.commit.message = pr_commit_message
 
-    response = lambda_function.validate_payload(event, payload, filter_groups)
-
-    assert response["message"] == "Payload does not fulfill trigger requirements"
+    with pytest.raises(
+        lambda_function.ClientException,
+        match="Payload does not fulfill trigger requirements",
+    ):
+        lambda_function.validate_payload(event, payload, filter_groups)
 
 
 @patch("function.lambda_function.validate_sig", return_value=None)
